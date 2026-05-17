@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Tests
+coverage/
+.vitest-cache/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local graphpilot data (when dogfooding)
+.graphpilot/
+
+# Private planning notes — NEVER commit these.
+.notes/
+
+# Stray DBs from external tools running in the working dir
+*.db
+*.sqlite
+*.sqlite3
