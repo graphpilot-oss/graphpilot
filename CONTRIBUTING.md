@@ -12,7 +12,7 @@ Thanks for your interest! GraphPilot is young — every contribution helps shape
 ## Development setup
 
 ```bash
-git clone https://github.com/<your-username>/graphpilot.git
+git clone https://github.com/codeakki/graphpilot.git
 cd graphpilot
 pnpm install
 pnpm build

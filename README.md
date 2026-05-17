@@ -17,7 +17,7 @@ Pre-alpha, in active development. Not yet published to npm. Expect breaking chan
 ## Quickstart (local dev)
 
 ```bash
-git clone https://github.com/<your-username>/graphpilot.git
+git clone https://github.com/codeakki/graphpilot.git
 cd graphpilot
 pnpm install
 pnpm build

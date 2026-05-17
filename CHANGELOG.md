@@ -24,4 +24,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interaction log (`interactions.jsonl`)
 - Outcome benchmark vs baseline Claude Code
 
-[Unreleased]: https://github.com/<your-username>/graphpilot/commits/main
+[Unreleased]: https://github.com/codeakki/graphpilot/commits/main
