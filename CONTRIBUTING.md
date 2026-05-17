@@ -69,6 +69,25 @@ One topic per commit. Commit messages explain the *why*, not just the *what*.
 - One thing per file. If a file passes ~300 lines, consider splitting it.
 - Tests next to code in `tests/`. Fixtures in `tests/fixtures/`.
 
+## Security
+
+GraphPilot reads code from people's repos and exposes a memory layer to AI agents.
+That means it's an attractive target for both supply-chain attacks and prompt-injection
+via crafted code. Before you contribute:
+
+- **Read [SECURITY.md](SECURITY.md)** for how to report vulnerabilities privately.
+- **No network code in `src/`.** Local-first is a user promise. If a feature seems to
+  need the network, open a Discussion first.
+- **No `child_process` / `exec` / `spawn`.** We don't shell out, ever.
+- **Validate every input that crosses a trust boundary.** Files on disk, CLI args, and
+  (when the MCP server lands) tool arguments are all untrusted by default.
+- **No telemetry, analytics, or "anonymous usage stats."** Not by default, not behind
+  a flag, not at all in v1.
+
+PRs that introduce network calls, child processes, eval, dynamic require, or unvalidated
+file-path arguments will be rejected unless there's a written threat-model justification
+in the PR description.
+
 ## What we are NOT doing in v1
 
 Please don't open PRs that add:
