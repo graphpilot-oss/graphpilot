@@ -421,4 +421,20 @@ export async function startMcpServer(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(`[graphpilot] MCP server ready (stdio).\n`);
+
+  // server.connect() resolves once handlers are wired — it does NOT block.
+  // We have to keep this promise pending until the client disconnects, or the
+  // CLI's `process.exit(0)` will kill us before the initialize handshake
+  // completes. Resolve on either the transport's onclose, or stdin EOF.
+  await new Promise<void>((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    transport.onclose = finish;
+    process.stdin.once('end', finish);
+    process.stdin.once('close', finish);
+  });
 }
