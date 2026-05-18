@@ -68,8 +68,8 @@ modify user code.
 | Parser + symbol extraction | ✅ Done (Day 2–3) |
 | Directory indexer + JSON storage | ✅ Done (Day 4–5) |
 | Security audit + threat model | ✅ Done (Day 5.5) |
-| Security hardening (5 concrete fixes) | 🚧 Open — see `.notes/security.md` §6 |
-| Call-edge extraction | ⏭ Day 6 |
+| Security hardening (T1/T2/T7/T10) | ✅ Done (Day 5.5) |
+| Call-edge extraction | 🚧 Day 6 (in progress) |
 | Query layer (in-memory indexes) | ⏭ Day 7 |
 | MCP server skeleton | ⏭ Day 8 |
 | Three tools + interaction log | ⏭ Day 9 |

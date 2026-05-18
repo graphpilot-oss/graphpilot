@@ -2,6 +2,7 @@
 import { resolve } from 'node:path';
 import { indexDirectory } from './indexer.js';
 import { saveGraph, loadGraph, graphPath, repoIdFor, type Graph } from './storage.js';
+import { validateRootPath } from './validation.js';
 
 const HELP = `graphpilot — structural memory for coding agents
 
@@ -17,6 +18,12 @@ Examples:
 
 async function cmdIndex(pathArg: string): Promise<number> {
   const absRoot = resolve(pathArg);
+  // T10 defence: refuse `/`, `/etc`, `~`, and friends before walking.
+  const refusal = validateRootPath(absRoot);
+  if (refusal) {
+    process.stderr.write(`Error: ${refusal}\n`);
+    return 2;
+  }
   process.stdout.write(`Indexing ${absRoot} ...\n`);
   const result = await indexDirectory(absRoot);
   const graph: Graph = {

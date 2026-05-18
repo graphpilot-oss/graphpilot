@@ -1,8 +1,9 @@
 import Parser from 'tree-sitter';
 // @ts-ignore — tree-sitter-typescript ships JS, has no types
 import TS from 'tree-sitter-typescript';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { extname } from 'node:path';
+import { MAX_FILE_BYTES } from './validation.js';
 
 export interface ParsedFile {
   path: string;
@@ -55,6 +56,15 @@ export function detectLang(path: string): ParsedFile['lang'] | null {
 export function parseFile(path: string): ParsedFile | null {
   const lang = detectLang(path);
   if (!lang) return null;
+  // Defence against T1 (resource exhaustion): skip oversized files rather than
+  // OOM the process. 5 MB is enough for any real source file.
+  let size: number;
+  try {
+    size = statSync(path).size;
+  } catch {
+    return null;
+  }
+  if (size > MAX_FILE_BYTES) return null;
   const source = readFileSync(path, 'utf8');
   return parseSource(path, source, lang);
 }
@@ -69,13 +79,23 @@ export function parseSource(
 }
 
 /**
- * Walk the tree and yield every node. Depth-first.
+ * Walk the tree and yield every node. Depth-first, pre-order.
+ *
+ * Iterative (not recursive) so a deeply-nested AST can't blow the JS stack.
+ * Tree-sitter trees on real codebases hit ~50–80 depth; pathological generated
+ * code can go much deeper. Defence against T1.
  */
 export function* walk(node: Parser.SyntaxNode): Generator<Parser.SyntaxNode> {
-  yield node;
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
-    if (child) yield* walk(child);
+  const stack: Parser.SyntaxNode[] = [node];
+  while (stack.length > 0) {
+    const cur = stack.pop()!;
+    yield cur;
+    // Push children in reverse so they pop in original order (preserves
+    // pre-order traversal — matters for callers that rely on source ordering).
+    for (let i = cur.childCount - 1; i >= 0; i--) {
+      const child = cur.child(i);
+      if (child) stack.push(child);
+    }
   }
 }
 
