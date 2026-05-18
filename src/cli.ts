@@ -3,17 +3,20 @@ import { resolve } from 'node:path';
 import { indexDirectory } from './indexer.js';
 import { saveGraph, loadGraph, graphPath, repoIdFor, type Graph } from './storage.js';
 import { validateRootPath } from './validation.js';
+import { startMcpServer } from './mcp.js';
 
 const HELP = `graphpilot — structural memory for coding agents
 
 Usage:
   graphpilot index <path>     Index a TypeScript/JavaScript repo
   graphpilot status <path>    Show info about an indexed repo
+  graphpilot mcp              Start the MCP server (stdio)
   graphpilot help             Show this help
 
 Examples:
   graphpilot index .
   graphpilot status .
+  graphpilot mcp              # used by MCP clients (Claude Code, Cursor, ...)
 `;
 
 async function cmdIndex(pathArg: string): Promise<number> {
@@ -81,6 +84,12 @@ async function main(): Promise<number> {
     case 'status': {
       const path = rest[0] ?? '.';
       return cmdStatus(path);
+    }
+    case 'mcp': {
+      // Server runs until stdin closes (MCP client disconnect). Never
+      // returns under normal operation.
+      await startMcpServer();
+      return 0;
     }
     case 'help':
     case '--help':
