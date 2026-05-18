@@ -33,11 +33,15 @@ async function cmdIndex(pathArg: string): Promise<number> {
     indexedAt: new Date().toISOString(),
     filesIndexed: result.filesIndexed,
     symbolCount: result.symbols.length,
+    edgeCount: result.edges.length,
     symbols: result.symbols,
+    edges: result.edges,
   };
   const saved = saveGraph(graph);
+  const resolved = result.edges.filter((e) => e.toId !== null).length;
   process.stdout.write(
-    `\n✓ Remembered ${result.symbols.length} symbols across ${result.filesIndexed} files in ${result.durationMs}ms.\n` +
+    `\n✓ Remembered ${result.symbols.length} symbols, ${result.edges.length} calls ` +
+      `(${resolved} resolved) across ${result.filesIndexed} files in ${result.durationMs}ms.\n` +
       `  Repo id:    ${graph.repoId}\n` +
       `  Graph file: ${saved}\n` +
       (result.filesFailed ? `  Failed:     ${result.filesFailed} file(s)\n` : ''),
@@ -61,6 +65,7 @@ function cmdStatus(pathArg: string): number {
       `Indexed at:   ${graph.indexedAt}\n` +
       `Files:        ${graph.filesIndexed}\n` +
       `Symbols:      ${graph.symbolCount}\n` +
+      `Calls:        ${graph.edgeCount ?? 0}\n` +
       `Graph file:   ${graphPath(absRoot)}\n`,
   );
   return 0;

@@ -3,6 +3,7 @@ import { realpathSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
+import { extractRawCalls, resolveCallEdges, type CallEdge, type RawCall } from './edges.js';
 import { MAX_FILES_PER_INDEX } from './validation.js';
 
 export interface IndexResult {
@@ -10,6 +11,7 @@ export interface IndexResult {
   filesIndexed: number;
   filesFailed: number;
   symbols: SymbolRecord[];
+  edges: CallEdge[];
   durationMs: number;
 }
 
@@ -79,6 +81,7 @@ export async function indexDirectory(
   }
 
   const symbols: SymbolRecord[] = [];
+  const rawCalls: RawCall[] = [];
   let filesIndexed = 0;
   let filesFailed = 0;
   let filesSkippedSymlink = 0;
@@ -102,25 +105,41 @@ export async function indexDirectory(
       const parsed = parseFile(file);
       if (!parsed) continue;
       const fileSymbols = extractSymbols(parsed);
+      const fileCalls = extractRawCalls(parsed, fileSymbols);
+
       if (useRelative) {
         const rel = relative(absRoot, file);
+        // Track id rewrites so call edges can be remapped in lockstep.
+        const idRewrites = new Map<string, string>();
         for (const s of fileSymbols) {
+          const oldId = s.id;
           s.file = rel;
-          s.id = s.id.replace(file, rel);
+          s.id = oldId.replace(file, rel);
+          idRewrites.set(oldId, s.id);
+        }
+        for (const c of fileCalls) {
+          c.file = rel;
+          c.fromId = idRewrites.get(c.fromId) ?? c.fromId;
         }
       }
+
       symbols.push(...fileSymbols);
+      rawCalls.push(...fileCalls);
       filesIndexed++;
     } catch {
       filesFailed++;
     }
   }
 
+  // Second pass: resolve names to symbol ids now that we've seen every file.
+  const edges = resolveCallEdges(rawCalls, symbols);
+
   return {
     rootPath: absRoot,
     filesIndexed,
     filesFailed: filesFailed + filesSkippedSymlink,
     symbols,
+    edges,
     durationMs: Date.now() - start,
   };
 }

@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import type { SymbolRecord } from './symbols.js';
+import type { CallEdge } from './edges.js';
 
 const isWindows = process.platform === 'win32';
 
@@ -13,7 +14,9 @@ export interface Graph {
   indexedAt: string;
   filesIndexed: number;
   symbolCount: number;
+  edgeCount: number;
   symbols: SymbolRecord[];
+  edges: CallEdge[];
 }
 
 export function repoIdFor(absRootPath: string): string {
