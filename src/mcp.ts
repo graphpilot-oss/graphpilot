@@ -5,116 +5,417 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { resolve } from 'node:path';
-import { loadGraph } from './storage.js';
 import { GraphIndex } from './query.js';
+import { indexDirectory } from './indexer.js';
+import {
+  loadGraph,
+  saveGraph,
+  repoIdFor,
+  type Graph,
+} from './storage.js';
+import { validateRootPath } from './validation.js';
+import {
+  validateGpIndex,
+  validateGpRecall,
+  validateGpCallers,
+  validateGpStats,
+  type GpRecallArgs,
+  type GpCallersArgs,
+  type GpIndexArgs,
+  type GpStatsArgs,
+} from './validators.js';
+import { withInteractionLog } from './interactions.js';
+import type { SymbolRecord } from './symbols.js';
+import type { CallEdge } from './edges.js';
 
 const SERVER_NAME = 'graphpilot';
 const SERVER_VERSION = '0.0.1';
 
-/**
- * Cache loaded GraphIndex instances by absolute path. A typical Claude Code
- * session queries the same repo many times in a row, so loading + indexing
- * once per repo is a big win.
- */
+// ----------------------------------------------------------------------------
+// Per-process cache of loaded GraphIndex by absolute repo path.
+// ----------------------------------------------------------------------------
+
 const indexCache = new Map<string, GraphIndex>();
 
-function getIndex(rawPath: string | undefined): GraphIndex | { error: string } {
+function getOrLoadIndex(
+  rawPath: string | undefined,
+): { idx: GraphIndex; root: string } | { error: string; root: string } {
   const root = resolve(rawPath ?? process.cwd());
   const cached = indexCache.get(root);
-  if (cached) return cached;
+  if (cached) return { idx: cached, root };
 
   const graph = loadGraph(root);
   if (!graph) {
     return {
+      root,
       error:
         `No GraphPilot index found for ${root}.\n` +
-        `Run \`graphpilot index ${rawPath ?? '.'}\` first.`,
+        `Ask the user to run \`graphpilot index ${rawPath ?? '.'}\` first, or ` +
+        `call the gp_index tool to build one.`,
     };
   }
   const idx = new GraphIndex(graph);
   indexCache.set(root, idx);
-  return idx;
+  return { idx, root };
 }
 
-/**
- * Build an MCP server configured with GraphPilot's tools. Caller wires the
- * transport (stdio in production, in-memory in tests).
- *
- * IMPORTANT: when running over stdio, stdout is reserved for the JSON-RPC
- * protocol. All diagnostic messages MUST go to stderr or they'll corrupt
- * the wire.
- */
+function invalidateCache(absRoot: string): void {
+  indexCache.delete(absRoot);
+}
+
+// ----------------------------------------------------------------------------
+// Tool-output formatting helpers (terse, agent-friendly text).
+// ----------------------------------------------------------------------------
+
+function fmtSymbol(s: SymbolRecord, index?: number): string {
+  const prefix = index !== undefined ? `${index + 1}. ` : '';
+  const parentTag = s.parent ? `${s.parent}.` : '';
+  const exp = s.exported ? ' [exported]' : '';
+  return (
+    `${prefix}${parentTag}${s.name}  (${s.kind})  ${s.file}:${s.line}${exp}\n` +
+    `   ${s.signature}`
+  );
+}
+
+function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
+  const prefix = index !== undefined ? `${index + 1}. ` : '';
+  if (e.toId === null && /* edge as caller listing */ false) {
+    // never hit — kept for future safety
+    return `${prefix}<unresolved>`;
+  }
+  // We don't know upfront whether this is a callers or callees listing, so the
+  // safest thing is to show both ends.
+  const fromSym = idx.findById(e.fromId);
+  const fromName = fromSym ? `${fromSym.parent ? fromSym.parent + '.' : ''}${fromSym.name}` : e.fromId;
+  const toLabel = e.toId
+    ? (() => {
+        const t = idx.findById(e.toId);
+        return t ? `${t.parent ? t.parent + '.' : ''}${t.name}` : e.toName;
+      })()
+    : `${e.toName} <unresolved>`;
+  return `${prefix}${fromName}  →  ${toLabel}  (${e.file}:${e.line})`;
+}
+
+// ----------------------------------------------------------------------------
+// Tool catalog (sent to clients via tools/list)
+// ----------------------------------------------------------------------------
+
+const TOOLS = [
+  {
+    name: 'gp_stats',
+    description:
+      'Show GraphPilot index health for a repo (symbol count, edge count, ' +
+      'when indexed). Use this to confirm the index is fresh before asking ' +
+      'structural questions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Repo path. Default: cwd.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'gp_index',
+    description:
+      'Index or re-index a TypeScript/JavaScript repo into GraphPilot. Call ' +
+      'this when the codebase has changed materially or when no index exists.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Repo path to index. Default: cwd.',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'gp_recall',
+    description:
+      'Look up symbols (functions, classes, methods, types, interfaces) by ' +
+      'name. Returns kind, location, and signature. Default: exact ' +
+      'case-insensitive. Pass substring:true for partial matches.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Symbol name to look up.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 50,
+          description: 'Max results (default 10).',
+        },
+        substring: {
+          type: 'boolean',
+          description: 'Enable substring match (default false).',
+        },
+        path: {
+          type: 'string',
+          description: 'Repo path. Default: cwd.',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'gp_callers',
+    description:
+      "List callers of a symbol (who calls it) or callees (what it calls). " +
+      "Use direction='callers' for impact analysis ('what breaks if I " +
+      "change this?'); direction='callees' to see what a function depends on.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        symbol: {
+          type: 'string',
+          description: 'Symbol name or full id.',
+        },
+        direction: {
+          type: 'string',
+          enum: ['callers', 'callees'],
+          description: "Default 'callers'.",
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description: 'Max edges (default 50).',
+        },
+        includeUnresolved: {
+          type: 'boolean',
+          description: 'Include external/stdlib calls (default true).',
+        },
+        path: {
+          type: 'string',
+          description: 'Repo path. Default: cwd.',
+        },
+      },
+      required: ['symbol'],
+      additionalProperties: false,
+    },
+  },
+] as const;
+
+// ----------------------------------------------------------------------------
+// Tool handlers
+// ----------------------------------------------------------------------------
+
+interface ToolResult {
+  text: string;
+  results: number;
+  isError?: boolean;
+}
+
+function handleGpStats(args: GpStatsArgs): ToolResult {
+  const out = getOrLoadIndex(args.path);
+  if ('error' in out) {
+    return { text: out.error, results: 0, isError: true };
+  }
+  const { idx } = out;
+  const s = idx.stats;
+  const g = idx.graph;
+  const text = [
+    `Repo:        ${g.rootPath}`,
+    `Repo id:     ${g.repoId}`,
+    `Indexed at:  ${g.indexedAt}`,
+    `Files:       ${g.filesIndexed}`,
+    `Symbols:     ${s.symbols}`,
+    `Calls:       ${s.edges} (${s.resolvedEdges} resolved)`,
+  ].join('\n');
+  return { text, results: 1 };
+}
+
+async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
+  const root = resolve(args.path ?? process.cwd());
+  const refusal = validateRootPath(root);
+  if (refusal) return { text: `Error: ${refusal}`, results: 0, isError: true };
+
+  const result = await indexDirectory(root);
+  const graph: Graph = {
+    version: 1,
+    repoId: repoIdFor(root),
+    rootPath: root,
+    indexedAt: new Date().toISOString(),
+    filesIndexed: result.filesIndexed,
+    symbolCount: result.symbols.length,
+    edgeCount: result.edges.length,
+    symbols: result.symbols,
+    edges: result.edges,
+  };
+  saveGraph(graph);
+  // After re-index, drop the cached GraphIndex for this root so subsequent
+  // calls see fresh data.
+  invalidateCache(root);
+  const resolved = result.edges.filter((e) => e.toId !== null).length;
+  const text =
+    `Indexed ${root}\n` +
+    `  Files:   ${result.filesIndexed}\n` +
+    `  Symbols: ${result.symbols.length}\n` +
+    `  Calls:   ${result.edges.length} (${resolved} resolved)\n` +
+    `  Took:    ${result.durationMs}ms`;
+  return { text, results: 1 };
+}
+
+function handleGpRecall(args: GpRecallArgs): ToolResult {
+  const out = getOrLoadIndex(args.path);
+  if ('error' in out) {
+    return { text: out.error, results: 0, isError: true };
+  }
+  const { idx } = out;
+  const matches = idx.findByName(args.query, {
+    limit: args.limit,
+    substring: args.substring,
+  });
+  if (matches.length === 0) {
+    return {
+      text: `No symbols match "${args.query}".`,
+      results: 0,
+    };
+  }
+  const header = `Found ${matches.length} symbol(s) matching "${args.query}":\n`;
+  const body = matches.map((s, i) => fmtSymbol(s, i)).join('\n\n');
+  return { text: header + body, results: matches.length };
+}
+
+function handleGpCallers(args: GpCallersArgs): ToolResult {
+  const out = getOrLoadIndex(args.path);
+  if ('error' in out) {
+    return { text: out.error, results: 0, isError: true };
+  }
+  const { idx } = out;
+  const direction = args.direction ?? 'callers';
+  const target = idx.resolveSymbol(args.symbol);
+  if (!target) {
+    return {
+      text: `No symbol found matching "${args.symbol}".`,
+      results: 0,
+      isError: true,
+    };
+  }
+
+  const edges =
+    direction === 'callers'
+      ? idx.callers(target.id, { limit: args.limit })
+      : idx.callees(target.id, {
+          limit: args.limit,
+          includeUnresolved: args.includeUnresolved !== false,
+        });
+
+  if (edges.length === 0) {
+    const label = direction === 'callers' ? 'callers' : 'callees';
+    return {
+      text: `No ${label} found for ${target.name} (${target.file}:${target.line}).`,
+      results: 0,
+    };
+  }
+
+  const verb = direction === 'callers' ? 'callers of' : 'callees of';
+  const header =
+    `${edges.length} ${verb} ${target.name} ` +
+    `(${target.file}:${target.line}):\n`;
+  const body = edges.map((e, i) => fmtEdge(e, idx, i)).join('\n');
+  return { text: header + body, results: edges.length };
+}
+
+// ----------------------------------------------------------------------------
+// Server builder + dispatcher
+// ----------------------------------------------------------------------------
+
 export function buildMcpServer(): Server {
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } },
   );
 
-  // Tool catalog. Day 8 ships only the stub `gp_stats` so we can confirm
-  // wiring end-to-end. Day 9 adds gp_recall and gp_callers.
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [
-      {
-        name: 'gp_stats',
-        description:
-          'Show GraphPilot index health for a repo (symbol count, edge count, ' +
-          'when indexed). Use this to confirm the index is fresh before asking ' +
-          'structural questions.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            path: {
-              type: 'string',
-              description:
-                'Absolute path to the repo. Defaults to the working directory.',
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    ],
+    tools: TOOLS as unknown as Array<{
+      name: string;
+      description: string;
+      inputSchema: object;
+    }>,
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const { name, arguments: args } = req.params;
-    const argObj = (args ?? {}) as Record<string, unknown>;
+    const rawArgs = (args ?? {}) as Record<string, unknown>;
 
-    if (name === 'gp_stats') {
-      const idxOrErr = getIndex(
-        typeof argObj.path === 'string' ? argObj.path : undefined,
-      );
-      if ('error' in idxOrErr) {
+    // We need to know the repo path *before* validation to drive the log,
+    // so the log captures even invalid-input attempts. Fall back to cwd.
+    const repoRootForLog = resolve(
+      typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd(),
+    );
+
+    return withInteractionLog(
+      repoRootForLog,
+      name,
+      rawArgs,
+      async () => {
+        // Validate first
+        let result: ToolResult;
+        switch (name) {
+          case 'gp_stats': {
+            const v = validateGpStats(rawArgs);
+            if (!v.ok) {
+              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+              break;
+            }
+            result = handleGpStats(v.value);
+            break;
+          }
+          case 'gp_index': {
+            const v = validateGpIndex(rawArgs);
+            if (!v.ok) {
+              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+              break;
+            }
+            result = await handleGpIndex(v.value);
+            break;
+          }
+          case 'gp_recall': {
+            const v = validateGpRecall(rawArgs);
+            if (!v.ok) {
+              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+              break;
+            }
+            result = handleGpRecall(v.value);
+            break;
+          }
+          case 'gp_callers': {
+            const v = validateGpCallers(rawArgs);
+            if (!v.ok) {
+              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+              break;
+            }
+            result = handleGpCallers(v.value);
+            break;
+          }
+          default:
+            result = { text: `Unknown tool: ${name}`, results: 0, isError: true };
+        }
+
         return {
-          content: [{ type: 'text', text: idxOrErr.error }],
-          isError: true,
+          // Caller (this lambda) returns to the dispatcher which sends to the
+          // MCP client. We also return interaction-log metadata.
+          value: {
+            content: [{ type: 'text', text: result.text }] as const,
+            isError: result.isError,
+          },
+          results: result.results,
+          error: result.isError ? result.text.slice(0, 200) : undefined,
         };
-      }
-      const s = idxOrErr.stats;
-      const g = idxOrErr.graph;
-      const text = [
-        `Repo:        ${g.rootPath}`,
-        `Repo id:     ${g.repoId}`,
-        `Indexed at:  ${g.indexedAt}`,
-        `Files:       ${g.filesIndexed}`,
-        `Symbols:     ${s.symbols}`,
-        `Calls:       ${s.edges} (${s.resolvedEdges} resolved)`,
-      ].join('\n');
-      return { content: [{ type: 'text', text }] };
-    }
-
-    return {
-      content: [{ type: 'text', text: `Unknown tool: ${name}` }],
-      isError: true,
-    };
+      },
+    ).then((v) => v);
   });
 
   return server;
 }
 
-/**
- * Start the MCP server over stdio. Used by `graphpilot mcp` from the CLI.
- * Runs until stdin closes (i.e., the MCP client disconnects).
- */
 export async function startMcpServer(): Promise<void> {
   const server = buildMcpServer();
   const transport = new StdioServerTransport();

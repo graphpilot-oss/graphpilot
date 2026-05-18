@@ -56,17 +56,18 @@ afterAll(async () => {
 });
 
 describe('MCP server: protocol handshake + tool catalog', () => {
-  it('lists exactly one tool (gp_stats) on Day 8', async () => {
+  it('lists the four Day-9 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(['gp_stats']);
+    expect(names).toEqual(['gp_callers', 'gp_index', 'gp_recall', 'gp_stats']);
   });
 
-  it('gp_stats has a description and an input schema', async () => {
+  it('every tool has a description and an object input schema', async () => {
     const { tools } = await client.listTools();
-    const stats = tools.find((t) => t.name === 'gp_stats')!;
-    expect(stats.description).toMatch(/index/i);
-    expect(stats.inputSchema?.type).toBe('object');
+    for (const t of tools) {
+      expect(t.description?.length).toBeGreaterThan(20);
+      expect(t.inputSchema?.type).toBe('object');
+    }
   });
 });
 
@@ -114,5 +115,107 @@ describe('MCP server: unknown tool', () => {
     if (!caught) {
       expect(res?.isError).toBe(true);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Day-9 tools
+// ---------------------------------------------------------------------------
+
+function textOf(res: Awaited<ReturnType<Client['callTool']>>): string {
+  return (res.content as Array<{ type: string; text: string }>)
+    .filter((c) => c.type === 'text')
+    .map((c) => c.text)
+    .join('\n');
+}
+
+describe('MCP server: gp_recall', () => {
+  it('finds the seeded symbol by name', async () => {
+    const res = await client.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'hello', path: workDir },
+    });
+    expect(res.isError).not.toBe(true);
+    const text = textOf(res);
+    expect(text).toContain('hello');
+    expect(text).toContain('hello.ts');
+  });
+
+  it('handles "no match" gracefully', async () => {
+    const res = await client.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'definitelyNotHere', path: workDir },
+    });
+    expect(res.isError).not.toBe(true);
+    expect(textOf(res)).toMatch(/no symbols match/i);
+  });
+
+  it('rejects empty queries', async () => {
+    const res = await client.callTool({
+      name: 'gp_recall',
+      arguments: { query: '', path: workDir },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/Invalid input/i);
+  });
+
+  it('rejects unknown fields', async () => {
+    const res = await client.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'hello', shellOut: 'rm -rf', path: workDir },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/shellOut/);
+  });
+
+  it('rejects out-of-range limit', async () => {
+    const res = await client.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'hello', limit: 9999, path: workDir },
+    });
+    expect(res.isError).toBe(true);
+  });
+});
+
+describe('MCP server: gp_callers', () => {
+  it('returns isError when the symbol is unknown', async () => {
+    const res = await client.callTool({
+      name: 'gp_callers',
+      arguments: { symbol: 'doesNotExist', path: workDir },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/no symbol found/i);
+  });
+
+  it('rejects invalid direction', async () => {
+    const res = await client.callTool({
+      name: 'gp_callers',
+      arguments: { symbol: 'hello', direction: 'sideways', path: workDir },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/direction/i);
+  });
+
+  it("returns 'no callers found' when target exists but nothing calls it", async () => {
+    const res = await client.callTool({
+      name: 'gp_callers',
+      arguments: { symbol: 'hello', direction: 'callers', path: workDir },
+    });
+    expect(res.isError).not.toBe(true);
+    expect(textOf(res)).toMatch(/no callers/i);
+  });
+});
+
+describe('MCP server: gp_index', () => {
+  it('re-indexes the repo end-to-end', async () => {
+    const res = await client.callTool({
+      name: 'gp_index',
+      arguments: { path: workDir },
+    });
+    expect(res.isError).not.toBe(true);
+    const text = textOf(res);
+    expect(text).toContain('Indexed');
+    expect(text).toContain('Files:');
+    expect(text).toContain('Symbols:');
   });
 });

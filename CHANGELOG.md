@@ -14,12 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Symbol extraction for functions, classes, methods, interfaces, type aliases, enums
 - Directory indexer with sensible default ignores (node_modules, dist, .d.ts, etc.)
 - JSON storage at `~/.graphpilot/<repo-id>/graph.json`
-- CLI: `graphpilot index <path>` and `graphpilot status <path>`
+- CLI: `graphpilot index <path>`, `graphpilot status <path>`, `graphpilot mcp`
 - Call-edge extraction (`gp_callers` precursor): captures every call/new
   expression inside a function body, attributes it to the immediate enclosing
   function, and resolves the target across the indexed symbol table.
 - Outputs include both resolved (`toId` set) and unresolved (`toName` only) edges
   so the agent can still see stdlib/external calls.
+- Query layer (`GraphIndex`): pre-computed lookup tables for findByName,
+  findById, callers, callees. Sub-millisecond lookups on indexed repos.
+- MCP server over stdio (`@modelcontextprotocol/sdk`). Tool surface:
+  - `gp_stats` — index health probe
+  - `gp_index` — re-index a repo from the agent
+  - `gp_recall` — find symbols by name (exact CI by default, substring opt-in)
+  - `gp_callers` — list callers or callees (with direction param)
+- Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
+  fields, type errors, out-of-range numbers, oversize strings.
+- Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool
+  call recorded locally with sanitized inputs. Enables future ranking /
+  personalization. Disabled via `GRAPHPILOT_NO_LOG=1`. Mode 0600.
 
 ### Security
 
@@ -34,8 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Pending
 
-- MCP server with `gp_index`, `gp_recall`, `gp_callers` tools
-- Interaction log (`interactions.jsonl`)
+- End-to-end test in Claude Code (manual setup)
 - Outcome benchmark vs baseline Claude Code
+- Graph-schema validation on load (T4)
+- Secret-pattern redaction in signatures/previews (T3)
 
 [Unreleased]: https://github.com/codeakki/graphpilot/commits/main
