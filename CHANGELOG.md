@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refuses to index `/`, `/etc`, `~`, `/Users`, Windows system paths, and macOS
   resolved aliases (`/private/etc`, etc.)
 - Graph dir/file written with mode `0o700` / `0o600`
+- Pattern-based secret redaction at signature-extraction time
+  (`src/redact.ts`): OpenAI/Anthropic `sk-`, GitHub `ghp_`/`ghs_`, AWS
+  `AKIA`, JWTs, PEM private-key headers, Slack tokens, Stripe live keys,
+  plus a defensive long-token catch-all.
 - Full threat model in `.notes/security.md` (private)
 
 ### Pending

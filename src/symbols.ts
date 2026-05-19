@@ -1,5 +1,6 @@
 import type Parser from 'tree-sitter';
 import { walk, type ParsedFile } from './parser.js';
+import { redactSecrets } from './redact.js';
 
 export type SymbolKind =
   | 'function'
@@ -145,7 +146,8 @@ function record(
 
 /**
  * Extract a single-line signature from the node. Takes the first line of
- * text up to the body/value, capped at 200 chars.
+ * text up to the body/value, capped at 200 chars. Secrets matching known
+ * patterns (T3 defence) are redacted before the line is returned.
  */
 function oneLineSignature(node: Parser.SyntaxNode, source: string): string {
   // For variable_declarator, climb to the parent lexical/var declaration so we
@@ -156,7 +158,9 @@ function oneLineSignature(node: Parser.SyntaxNode, source: string): string {
   }
   const raw = source.slice(target.startIndex, target.endIndex);
   const firstLine = raw.split('\n')[0].trim();
-  return firstLine.length > 200 ? firstLine.slice(0, 197) + '...' : firstLine;
+  const capped = firstLine.length > 200 ? firstLine.slice(0, 197) + '...' : firstLine;
+  // T3: redact known-format secrets (API keys, tokens, JWTs, PEM headers).
+  return redactSecrets(capped);
 }
 
 /**
