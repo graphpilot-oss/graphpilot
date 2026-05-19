@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import type { SymbolRecord } from './symbols.js';
 import type { CallEdge } from './edges.js';
+import { validateGraph } from './graph-schema.js';
 
 const isWindows = process.platform === 'win32';
 
@@ -47,9 +48,48 @@ export function saveGraph(graph: Graph): string {
   return path;
 }
 
+/**
+ * Load and validate a graph from disk. Returns null if the file is missing,
+ * unparseable, has a wrong schema version, or fails structural validation.
+ *
+ * T4 defence: anything from disk is untrusted. We re-parse and re-shape
+ * every field before exposing the result to query / MCP layers. String
+ * fields are sanitized (control chars stripped, lengths capped) so a
+ * crafted graph.json can't smuggle prompt-injection payloads or fake JSON
+ * Lines into tool output.
+ *
+ * Validation errors are written to stderr for diagnostics. The function
+ * never throws on bad data — it returns null so the MCP tool layer can
+ * surface "no index" cleanly.
+ */
 export function loadGraph(absRootPath: string): Graph | null {
   const path = graphPath(absRootPath);
   if (!existsSync(path)) return null;
-  const raw = readFileSync(path, 'utf8');
-  return JSON.parse(raw) as Graph;
+
+  let raw: string;
+  try {
+    raw = readFileSync(path, 'utf8');
+  } catch {
+    return null;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    process.stderr.write(`[graphpilot] graph.json is not valid JSON: ${path}\n`);
+    return null;
+  }
+
+  const errors: string[] = [];
+  const validated = validateGraph(parsed, errors);
+  if (!validated) {
+    process.stderr.write(
+      `[graphpilot] graph.json failed schema validation: ${path}\n` +
+        errors.map((e) => `  - ${e}`).join('\n') +
+        '\n',
+    );
+    return null;
+  }
+  return validated;
 }

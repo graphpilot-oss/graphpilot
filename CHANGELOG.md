@@ -46,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`src/redact.ts`): OpenAI/Anthropic `sk-`, GitHub `ghp_`/`ghs_`, AWS
   `AKIA`, JWTs, PEM private-key headers, Slack tokens, Stripe live keys,
   plus a defensive long-token catch-all.
+- Schema validation on graph.json load (`src/graph-schema.ts`): strict
+  shape check, version enforcement, per-entry sanitization (control chars
+  stripped, length-capped), and recomputed counts (attacker-supplied
+  symbol/edge counts are ignored). Defends against tampered or corrupt
+  files; falls back to "no index" on rejection.
 - Full threat model in `.notes/security.md` (private)
 
 ### Pending
