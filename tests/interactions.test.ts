@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'node:fs';
-import { tmpdir, homedir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   logInteraction,
   sanitizeInput,
   withInteractionLog,
 } from '../src/interactions.js';
-import { repoDir, repoIdFor } from '../src/storage.js';
+import { repoDir } from '../src/storage.js';
 
 const isWindows = process.platform === 'win32';
 

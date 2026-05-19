@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stripped, length-capped), and recomputed counts (attacker-supplied
   symbol/edge counts are ignored). Defends against tampered or corrupt
   files; falls back to "no index" on rejection.
+- ESLint policy enforcing "no network in `src/`" at the build gate
+  (`eslint.config.js`): bans `http`, `https`, `undici`, `axios`,
+  `node-fetch`, `cross-fetch`, `got`, `request`, `superagent`, plus
+  `child_process`. Looser rules for `tests/` and `scripts/`. CI runs
+  `pnpm lint` as a gating job; meta-tests in `tests/lint-policy.test.ts`
+  prove the rule fires on every banned import (catches rule-rot in
+  future PRs).
 - Full threat model in `.notes/security.md` (private)
 
 ### Pending

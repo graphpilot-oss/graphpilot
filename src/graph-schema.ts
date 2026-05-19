@@ -47,7 +47,6 @@ const MAX_SIGNATURE_LEN = 400;
  */
 function sanitizeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== 'string') return null;
-  // eslint-disable-next-line no-control-regex
   const stripped = v.replace(/[\x00-\x1F\x7F]/g, ' ');
   return stripped.length > maxLen ? stripped.slice(0, maxLen) : stripped;
 }
