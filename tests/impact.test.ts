@@ -30,12 +30,7 @@ function sym(opts: {
   };
 }
 
-function edge(opts: {
-  from: string;
-  to: string | null;
-  toName?: string;
-  file?: string;
-}): CallEdge {
+function edge(opts: { from: string; to: string | null; toName?: string; file?: string }): CallEdge {
   return {
     fromId: opts.from,
     toId: opts.to,
@@ -109,10 +104,7 @@ describe('analyzeImpact', () => {
 
   it('returns empty caller arrays when nothing calls the target', () => {
     const idx = new GraphIndex(
-      makeGraph(
-        [sym({ id: 'a.ts#target@1', name: 'target', file: 'a.ts' })],
-        [],
-      ),
+      makeGraph([sym({ id: 'a.ts#target@1', name: 'target', file: 'a.ts' })], []),
     );
     const r = analyzeImpact(idx, 'target');
     expect(r).not.toBeNull();
@@ -193,9 +185,7 @@ describe('analyzeImpact', () => {
   });
 
   it('caps depth to 5 even when caller requests higher', () => {
-    const idx = new GraphIndex(
-      makeGraph([sym({ id: 'a.ts#t@1', name: 't', file: 'a.ts' })], []),
-    );
+    const idx = new GraphIndex(makeGraph([sym({ id: 'a.ts#t@1', name: 't', file: 'a.ts' })], []));
     // depth=99 should be silently clamped. We don't expose a way to read the
     // applied cap, but we can verify it doesn't throw and returns a result.
     expect(() => analyzeImpact(idx, 't', { depth: 99 })).not.toThrow();
@@ -239,9 +229,7 @@ describe('analyzeImpact', () => {
     expect(r.directCallers.map((c) => c.symbol.name)).toEqual(['caller']);
     // target should not appear as its own caller in the result
     expect(
-      [...r.directCallers, ...r.transitiveCallers].some(
-        (c) => c.symbol.name === 'target',
-      ),
+      [...r.directCallers, ...r.transitiveCallers].some((c) => c.symbol.name === 'target'),
     ).toBe(false);
   });
 

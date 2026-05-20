@@ -59,10 +59,7 @@ function cmdStatus(pathArg: string): number {
   const absRoot = resolve(pathArg);
   const graph = loadGraph(absRoot);
   if (!graph) {
-    process.stderr.write(
-      `No index found for ${absRoot}\n` +
-        `Run: graphpilot index ${pathArg}\n`,
-    );
+    process.stderr.write(`No index found for ${absRoot}\n` + `Run: graphpilot index ${pathArg}\n`);
     return 1;
   }
   process.stdout.write(

@@ -24,9 +24,7 @@ export class GraphpilotRunner {
   constructor(repoRoot: string) {
     const g = loadGraph(repoRoot);
     if (!g) {
-      throw new Error(
-        `No graph found at ${repoRoot}. Run \`graphpilot index\` first.`,
-      );
+      throw new Error(`No graph found at ${repoRoot}. Run \`graphpilot index\` first.`);
     }
     this.idx = new GraphIndex(g);
   }
@@ -72,9 +70,7 @@ export class GraphpilotRunner {
         // expose this as a tool today (would be a v0.2 gp_list_by_kind)
         // but the data is in GraphIndex.graph.symbols.
         returned = this.idx.graph.symbols
-          .filter(
-            (s) => s.kind === task.query && s.file.startsWith('src/'),
-          )
+          .filter((s) => s.kind === task.query && s.file.startsWith('src/'))
           .map((s) => s.name)
           .sort();
         break;

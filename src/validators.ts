@@ -67,10 +67,7 @@ function pickNumber(
   return ok(raw);
 }
 
-function pickBoolean(
-  obj: Record<string, unknown>,
-  key: string,
-): Result<boolean | undefined> {
+function pickBoolean(obj: Record<string, unknown>, key: string): Result<boolean | undefined> {
   const raw = obj[key];
   if (raw === undefined) return ok(undefined);
   if (typeof raw !== 'boolean') return fail(`${key} must be a boolean`);
@@ -90,15 +87,10 @@ function pickEnum<T extends string>(
   return ok(raw as T);
 }
 
-function rejectExtraKeys(
-  obj: Record<string, unknown>,
-  allowed: readonly string[],
-): Result<true> {
+function rejectExtraKeys(obj: Record<string, unknown>, allowed: readonly string[]): Result<true> {
   const extras = Object.keys(obj).filter((k) => !allowed.includes(k));
   if (extras.length > 0) {
-    return fail(
-      `Unknown field(s): ${extras.join(', ')}. Allowed: ${allowed.join(', ')}`,
-    );
+    return fail(`Unknown field(s): ${extras.join(', ')}. Allowed: ${allowed.join(', ')}`);
   }
   return ok(true);
 }
@@ -166,13 +158,7 @@ export interface GpCallersArgs {
   includeUnresolved?: boolean;
   path?: string;
 }
-const GP_CALLERS_KEYS = [
-  'symbol',
-  'direction',
-  'limit',
-  'includeUnresolved',
-  'path',
-] as const;
+const GP_CALLERS_KEYS = ['symbol', 'direction', 'limit', 'includeUnresolved', 'path'] as const;
 
 export function validateGpCallers(input: unknown): Result<GpCallersArgs> {
   if (!isPlainObject(input)) return fail('arguments must be an object');

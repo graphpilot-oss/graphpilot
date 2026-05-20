@@ -22,17 +22,25 @@ pre-commit:
     - name: typecheck
       run: pnpm typecheck
       glob:
-        - "src/**/*.ts"
-        - "tests/**/*.ts"
-        - "bench/**/*.ts"
+        - 'src/**/*.ts'
+        - 'tests/**/*.ts'
+        - 'bench/**/*.ts'
 
     - name: lint
       # Only lint files actually staged — fast, accurate.
       run: pnpm exec eslint {staged_files}
       glob:
-        - "src/**/*.ts"
-        - "tests/**/*.ts"
-        - "scripts/**/*.{ts,mjs}"
+        - 'src/**/*.ts'
+        - 'tests/**/*.ts'
+        - 'scripts/**/*.{ts,mjs}'
+
+    - name: format
+      # Format-check staged files. If drift, the dev runs `pnpm format`
+      # to fix and re-stages. No auto-write here — explicit is safer
+      # (auto-write on commit can clobber a stash or rebase mid-edit).
+      run: pnpm exec prettier --check {staged_files}
+      glob:
+        - '**/*.{ts,tsx,js,jsx,mjs,cjs,json,yml,yaml,md}'
 
 commit-msg:
   jobs:

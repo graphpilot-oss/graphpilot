@@ -47,13 +47,13 @@ Then wire it into Claude Code (or any MCP client): see
 Five MCP tools that any MCP-compatible agent (Claude Code, Cursor, Cline,
 Windsurf, Continue) can call:
 
-| Tool | Use it for |
-|---|---|
-| `gp_index` | Re-index a repo from inside the agent |
-| `gp_recall` | Look up a function/class/type/interface by name |
-| `gp_callers` | List callers (or callees) of a symbol |
-| `gp_impact` | Blast radius: direct + transitive callers, tests affected, public-API flag — answers *"what breaks if I rename X?"* in one call |
-| `gp_stats` | Index health probe |
+| Tool         | Use it for                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `gp_index`   | Re-index a repo from inside the agent                                                                                           |
+| `gp_recall`  | Look up a function/class/type/interface by name                                                                                 |
+| `gp_callers` | List callers (or callees) of a symbol                                                                                           |
+| `gp_impact`  | Blast radius: direct + transitive callers, tests affected, public-API flag — answers _"what breaks if I rename X?"_ in one call |
+| `gp_stats`   | Index health probe                                                                                                              |
 
 Plus `graphpilot watch` for sub-second incremental updates on file save.
 
@@ -63,24 +63,24 @@ ESLint policy on the codebase itself.
 
 ## Roadmap
 
-| Milestone | Status |
-|---|---|
-| Parser + symbol extraction (TS/JS) | ✅ |
-| Directory indexer + JSON storage | ✅ |
-| Call-edge extraction + resolver | ✅ |
-| MCP server (5 tools) | ✅ |
-| Watch mode | ✅ |
-| Impact analysis (`gp_impact`) | ✅ |
-| Tier-A benchmark (this codebase) | ✅ |
-| Tier-B agent benchmark (Claude Code vs baseline) | ⏭ |
-| npm publish | ⏭ |
-| Python language support | ⏭ (demand-gated) |
+| Milestone                                        | Status            |
+| ------------------------------------------------ | ----------------- |
+| Parser + symbol extraction (TS/JS)               | ✅                |
+| Directory indexer + JSON storage                 | ✅                |
+| Call-edge extraction + resolver                  | ✅                |
+| MCP server (5 tools)                             | ✅                |
+| Watch mode                                       | ✅                |
+| Impact analysis (`gp_impact`)                    | ✅                |
+| Tier-A benchmark (this codebase)                 | ✅                |
+| Tier-B agent benchmark (Claude Code vs baseline) | ⏭                |
+| npm publish                                      | ⏭                |
+| Python language support                          | ⏭ (demand-gated) |
 
 ## Why
 
 Most coding agents (Claude Code, Cursor, Aider) re-grep the codebase every
 conversation. That burns tokens, hallucinates function names, and misses
-structural relationships (*"what calls this?"*, *"what breaks if I rename it?"*).
+structural relationships (_"what calls this?"_, _"what breaks if I rename it?"_).
 
 GraphPilot indexes the structural memory of your repo once. The agent reuses
 it across sessions. Token cost drops. Hallucinations drop. Refactors get safer.

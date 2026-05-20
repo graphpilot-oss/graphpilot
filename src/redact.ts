@@ -46,11 +46,23 @@ const SECRET_PATTERNS: readonly SecretPattern[] = [
   // GitHub personal access tokens.
   { pattern: /\bghp_[A-Za-z0-9]{30,}\b/g, replacement: 'ghp_***REDACTED***', label: 'github-pat' },
   // GitHub server tokens.
-  { pattern: /\bghs_[A-Za-z0-9]{30,}\b/g, replacement: 'ghs_***REDACTED***', label: 'github-server' },
+  {
+    pattern: /\bghs_[A-Za-z0-9]{30,}\b/g,
+    replacement: 'ghs_***REDACTED***',
+    label: 'github-server',
+  },
   // GitHub user / OAuth tokens.
-  { pattern: /\bgho_[A-Za-z0-9]{30,}\b/g, replacement: 'gho_***REDACTED***', label: 'github-oauth' },
+  {
+    pattern: /\bgho_[A-Za-z0-9]{30,}\b/g,
+    replacement: 'gho_***REDACTED***',
+    label: 'github-oauth',
+  },
   // GitHub refresh tokens.
-  { pattern: /\bghr_[A-Za-z0-9]{30,}\b/g, replacement: 'ghr_***REDACTED***', label: 'github-refresh' },
+  {
+    pattern: /\bghr_[A-Za-z0-9]{30,}\b/g,
+    replacement: 'ghr_***REDACTED***',
+    label: 'github-refresh',
+  },
   // AWS access key IDs.
   { pattern: /\bAKIA[0-9A-Z]{16}\b/g, replacement: 'AKIA***REDACTED***', label: 'aws-akia' },
   // AWS short-term session tokens (less specific, but the leading prefix is unique).
@@ -62,7 +74,11 @@ const SECRET_PATTERNS: readonly SecretPattern[] = [
     label: 'slack',
   },
   // Stripe live secret keys.
-  { pattern: /\bsk_live_[A-Za-z0-9]{20,}\b/g, replacement: 'sk_live_***REDACTED***', label: 'stripe-live' },
+  {
+    pattern: /\bsk_live_[A-Za-z0-9]{20,}\b/g,
+    replacement: 'sk_live_***REDACTED***',
+    label: 'stripe-live',
+  },
   // Generic long high-entropy token inside a string literal.
   // Heuristic: 32+ chars of alphanumeric / underscore / hyphen / equals,
   // immediately surrounded by matching quotes. Keeps false positives down

@@ -168,13 +168,13 @@ MCP request → validator → tool handler → response
 
 ## The five MCP tools
 
-| Tool | Input | Output |
-|---|---|---|
-| `gp_index` | `{ path? }` | Triggers re-indexing + saves graph; invalidates per-path cache |
-| `gp_recall` | `{ query, limit?, substring?, path? }` | Symbols matching name (exact case-insensitive by default; `substring: true` opt-in) |
-| `gp_callers` | `{ symbol, direction?: 'callers' \| 'callees', limit?, includeUnresolved?, path? }` | Edges where the symbol is target (callers) or source (callees) |
-| `gp_impact` | `{ symbol, depth? (1–5, default 3), path? }` | Blast-radius report: direct callers, transitive callers grouped by BFS depth, tests likely affected, public-API flag, summary stats |
-| `gp_stats` | `{ path? }` | Health check: repo id, indexedAt, file/symbol/edge counts |
+| Tool         | Input                                                                               | Output                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `gp_index`   | `{ path? }`                                                                         | Triggers re-indexing + saves graph; invalidates per-path cache                                                                      |
+| `gp_recall`  | `{ query, limit?, substring?, path? }`                                              | Symbols matching name (exact case-insensitive by default; `substring: true` opt-in)                                                 |
+| `gp_callers` | `{ symbol, direction?: 'callers' \| 'callees', limit?, includeUnresolved?, path? }` | Edges where the symbol is target (callers) or source (callees)                                                                      |
+| `gp_impact`  | `{ symbol, depth? (1–5, default 3), path? }`                                        | Blast-radius report: direct callers, transitive callers grouped by BFS depth, tests likely affected, public-API flag, summary stats |
+| `gp_stats`   | `{ path? }`                                                                         | Health check: repo id, indexedAt, file/symbol/edge counts                                                                           |
 
 Every input is validated by hand-rolled validators in
 [`src/validators.ts`](../src/validators.ts):
@@ -209,7 +209,13 @@ File: [`src/interactions.ts`](../src/interactions.ts)
 Every tool call appends one line to `interactions.jsonl`:
 
 ```json
-{"ts":"2026-05-18T20:45:00Z","tool":"gp_recall","input":{"query":"parseToken"},"results":1,"durationMs":3}
+{
+  "ts": "2026-05-18T20:45:00Z",
+  "tool": "gp_recall",
+  "input": { "query": "parseToken" },
+  "results": 1,
+  "durationMs": 3
+}
 ```
 
 **What is logged:** tool name, sanitized input args, result count,
@@ -225,7 +231,7 @@ names):
 - Cap whole-line size at 8 KB; oversize entries fall back to a marker
 - Disabled entirely with `GRAPHPILOT_NO_LOG=1`
 
-v0.1 doesn't *read* this log. It exists from day one so future ranking
+v0.1 doesn't _read_ this log. It exists from day one so future ranking
 and personalization have data to train on. Local-only, your data.
 
 ## Process model
@@ -255,18 +261,18 @@ defences in code:
 
 ## Testing strategy
 
-| Test file | What it covers | Tests |
-|---|---|---|
-| `tests/parser.test.ts` | Tree-sitter wiring + function detection | 3 |
-| `tests/symbols.test.ts` | Per-kind symbol extraction + id format | 9 |
-| `tests/edges.test.ts` | Raw call extraction + resolution + nested fns | 10 |
-| `tests/security.test.ts` | T1/T2/T7/T10 defences | 10 |
-| `tests/query.test.ts` | GraphIndex maps + edge cases | 18 |
-| `tests/validators.test.ts` | Per-tool input validators | 20 |
-| `tests/interactions.test.ts` | Sanitization + log file + env-var disable | 11 |
-| `tests/mcp.test.ts` | Tools through InMemoryTransport | 14 |
-| `tests/mcp-stdio.test.ts` | Real subprocess over stdio (catches the Day-10 bug class) | 3 |
-| **Total** | | **98** |
+| Test file                    | What it covers                                            | Tests  |
+| ---------------------------- | --------------------------------------------------------- | ------ |
+| `tests/parser.test.ts`       | Tree-sitter wiring + function detection                   | 3      |
+| `tests/symbols.test.ts`      | Per-kind symbol extraction + id format                    | 9      |
+| `tests/edges.test.ts`        | Raw call extraction + resolution + nested fns             | 10     |
+| `tests/security.test.ts`     | T1/T2/T7/T10 defences                                     | 10     |
+| `tests/query.test.ts`        | GraphIndex maps + edge cases                              | 18     |
+| `tests/validators.test.ts`   | Per-tool input validators                                 | 20     |
+| `tests/interactions.test.ts` | Sanitization + log file + env-var disable                 | 11     |
+| `tests/mcp.test.ts`          | Tools through InMemoryTransport                           | 14     |
+| `tests/mcp-stdio.test.ts`    | Real subprocess over stdio (catches the Day-10 bug class) | 3      |
+| **Total**                    |                                                           | **98** |
 
 `InMemoryTransport` is fast and covers tool logic. `mcp-stdio.test.ts`
 spawns the real binary and drives it over stdin/stdout — slower but
@@ -274,12 +280,12 @@ catches the "server starts but never responds" regression class.
 
 ## Extension points (where v0.2+ work plugs in)
 
-| Feature | Where it would live | Effort |
-|---|---|---|
-| ~~Watch mode~~ | Shipped: `src/watcher.ts` + `graphpilot watch` CLI | — |
-| ~~`gp_impact` tool~~ | Shipped: `src/impact.ts` + handler in `mcp.ts` | — |
-| `.graphpilotignore` | extend `DEFAULT_IGNORE` in indexer + watcher | small |
-| Cross-repo workspace | new `src/workspace.ts` + workspace yaml loader | medium |
-| Semantic search | embedding pipeline + vector index | medium |
-| Stack-Graphs resolver | replace `resolveCallEdges` algorithm | large |
-| Python support | new tree-sitter grammar wired through `parser.ts` | medium |
+| Feature               | Where it would live                                | Effort |
+| --------------------- | -------------------------------------------------- | ------ |
+| ~~Watch mode~~        | Shipped: `src/watcher.ts` + `graphpilot watch` CLI | —      |
+| ~~`gp_impact` tool~~  | Shipped: `src/impact.ts` + handler in `mcp.ts`     | —      |
+| `.graphpilotignore`   | extend `DEFAULT_IGNORE` in indexer + watcher       | small  |
+| Cross-repo workspace  | new `src/workspace.ts` + workspace yaml loader     | medium |
+| Semantic search       | embedding pipeline + vector index                  | medium |
+| Stack-Graphs resolver | replace `resolveCallEdges` algorithm               | large  |
+| Python support        | new tree-sitter grammar wired through `parser.ts`  | medium |

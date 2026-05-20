@@ -131,12 +131,6 @@ export default [
   // Things to ignore
   // ---------------------------------------------------------------------
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      '.notes/**',
-      'pnpm-lock.yaml',
-    ],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.notes/**', 'pnpm-lock.yaml'],
   },
 ];

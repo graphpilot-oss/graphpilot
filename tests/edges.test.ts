@@ -104,9 +104,7 @@ describe('resolveCallEdges', () => {
       id: 'b.ts#foo@1',
       file: 'b.ts',
     };
-    const raw = [
-      { fromId: 'b.ts#bar@5', toName: 'foo', file: 'b.ts', line: 6, column: 10 },
-    ];
+    const raw = [{ fromId: 'b.ts#bar@5', toName: 'foo', file: 'b.ts', line: 6, column: 10 }];
     const edges = resolveCallEdges(raw, [fileASym, fileBSym]);
     expect(edges[0].toId).toBe('b.ts#foo@1');
   });
@@ -128,10 +126,7 @@ describe('indexDirectory: cross-file edges', () => {
   });
 
   it('resolves a call across two files', async () => {
-    writeFileSync(
-      join(workDir, 'a.ts'),
-      `export function helper(): number { return 42; }\n`,
-    );
+    writeFileSync(join(workDir, 'a.ts'), `export function helper(): number { return 42; }\n`);
     writeFileSync(
       join(workDir, 'b.ts'),
       `import { helper } from './a';\nexport function main(): number { return helper(); }\n`,
@@ -141,19 +136,14 @@ describe('indexDirectory: cross-file edges', () => {
 
     expect(result.symbols.map((s) => s.name).sort()).toEqual(['helper', 'main']);
 
-    const mainToHelper = result.edges.find(
-      (e) => e.toName === 'helper' && e.file === 'b.ts',
-    );
+    const mainToHelper = result.edges.find((e) => e.toName === 'helper' && e.file === 'b.ts');
     expect(mainToHelper).toBeDefined();
     expect(mainToHelper!.toId).not.toBeNull();
     expect(mainToHelper!.toId).toContain('a.ts#helper');
   });
 
   it('emits zero edges when no calls exist', async () => {
-    writeFileSync(
-      join(workDir, 'pure.ts'),
-      `export const x = 1;\nexport type Y = string;\n`,
-    );
+    writeFileSync(join(workDir, 'pure.ts'), `export const x = 1;\nexport type Y = string;\n`);
     const result = await indexDirectory(workDir);
     expect(result.edges.length).toBe(0);
   });

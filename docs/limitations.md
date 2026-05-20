@@ -14,7 +14,7 @@ a planned fix; unmarked items are out of scope for v1.x.
   - All other languages — not planned for v1
 - **`.d.ts` declaration files are skipped.** They mostly express types
   that don't add structural information to the call graph.
-- **JSON, YAML, Markdown, configs:** not indexed (we are a *code*
+- **JSON, YAML, Markdown, configs:** not indexed (we are a _code_
   index, not a project index).
 
 ## Resolver accuracy
@@ -40,8 +40,8 @@ trade-offs:
 - **Expected resolution rate:** roughly **25–35% of edges resolve** to
   an in-repo symbol id; the rest are external. On GraphPilot's own code
   it's 42/155 (27%). That's enough to materially reduce hallucinations
-  because the questions agents actually ask (*"who calls X in my
-  repo"*) are the ones the dumb resolver answers correctly.
+  because the questions agents actually ask (_"who calls X in my
+  repo"_) are the ones the dumb resolver answers correctly.
 
 **Planned in v0.2:** import-path tracking, re-export resolution.
 
@@ -89,7 +89,7 @@ trade-offs:
   planned for v0.3.
 - **No route detection.** Express, Fastify, NestJS, Hono handlers are
   not recognized as routes in v0.1.
-- **No test-to-unit mapping.** `tests/auth.spec.ts` does *not* link to
+- **No test-to-unit mapping.** `tests/auth.spec.ts` does _not_ link to
   the symbols it tests. Planned for v0.3.
 - **No semantic search.** `gp_recall` is name-only (exact case-insensitive
   or substring). "Find code similar to this snippet" — not supported.
@@ -124,11 +124,11 @@ trade-offs:
 Rough numbers on Apple Silicon (M1 Pro, 16 GB):
 
 | Repo size | Index time | Resident memory | graph.json |
-|---|---|---|---|
-| 100 files | 80 ms | ~30 MB | ~100 KB |
-| 1k files | 800 ms | ~80 MB | ~1 MB |
-| 10k files | 8 s | ~300 MB | ~10 MB |
-| 50k files | 40 s | ~1.2 GB | ~50 MB |
+| --------- | ---------- | --------------- | ---------- |
+| 100 files | 80 ms      | ~30 MB          | ~100 KB    |
+| 1k files  | 800 ms     | ~80 MB          | ~1 MB      |
+| 10k files | 8 s        | ~300 MB         | ~10 MB     |
+| 50k files | 40 s       | ~1.2 GB         | ~50 MB     |
 
 Query latency on the pre-computed indexes: sub-millisecond even at 50k
 symbols.

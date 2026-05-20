@@ -45,12 +45,8 @@ const FUNCTION_NODE_TYPES = new Set([
  * to the arrow, not to `outer`. (When the arrow itself has a SymbolRecord —
  * because it was assigned to a const — we'll visit it separately.)
  */
-function* walkBodyExcludingNestedFns(
-  rootNode: Parser.SyntaxNode,
-): Generator<Parser.SyntaxNode> {
-  const stack: { node: Parser.SyntaxNode; isRoot: boolean }[] = [
-    { node: rootNode, isRoot: true },
-  ];
+function* walkBodyExcludingNestedFns(rootNode: Parser.SyntaxNode): Generator<Parser.SyntaxNode> {
+  const stack: { node: Parser.SyntaxNode; isRoot: boolean }[] = [{ node: rootNode, isRoot: true }];
   while (stack.length > 0) {
     const { node, isRoot } = stack.pop()!;
     if (!isRoot && FUNCTION_NODE_TYPES.has(node.type)) continue;
@@ -80,8 +76,7 @@ function* walkBodyExcludingNestedFns(
  */
 function calleeName(callNode: Parser.SyntaxNode): string | null {
   const fnField =
-    callNode.childForFieldName('function') ??
-    callNode.childForFieldName('constructor');
+    callNode.childForFieldName('function') ?? callNode.childForFieldName('constructor');
   if (!fnField) return null;
   if (fnField.type === 'identifier' || fnField.type === 'type_identifier') {
     return fnField.text;
@@ -128,10 +123,7 @@ function nodeMatchKey(node: Parser.SyntaxNode): string | null {
  *
  * Returns calls keyed by *line+name lookup* so resolution can happen later.
  */
-export function extractRawCalls(
-  parsed: ParsedFile,
-  fileSymbols: SymbolRecord[],
-): RawCall[] {
+export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[]): RawCall[] {
   const calls: RawCall[] = [];
 
   // Index symbols by line:name so we can match an AST node back to its record.
@@ -189,10 +181,7 @@ export function extractRawCalls(
  *
  * These are fine for v1; the goal is "better than grep" not "compiler-grade".
  */
-export function resolveCallEdges(
-  rawCalls: RawCall[],
-  allSymbols: SymbolRecord[],
-): CallEdge[] {
+export function resolveCallEdges(rawCalls: RawCall[], allSymbols: SymbolRecord[]): CallEdge[] {
   const byName = new Map<string, SymbolRecord[]>();
   for (const s of allSymbols) {
     const list = byName.get(s.name);

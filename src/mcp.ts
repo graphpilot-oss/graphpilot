@@ -1,18 +1,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { resolve } from 'node:path';
 import { GraphIndex } from './query.js';
 import { indexDirectory } from './indexer.js';
-import {
-  loadGraph,
-  saveGraph,
-  repoIdFor,
-  type Graph,
-} from './storage.js';
+import { loadGraph, saveGraph, repoIdFor, type Graph } from './storage.js';
 import { validateRootPath } from './validation.js';
 import {
   validateGpIndex,
@@ -75,8 +67,7 @@ function fmtSymbol(s: SymbolRecord, index?: number): string {
   const parentTag = s.parent ? `${s.parent}.` : '';
   const exp = s.exported ? ' [exported]' : '';
   return (
-    `${prefix}${parentTag}${s.name}  (${s.kind})  ${s.file}:${s.line}${exp}\n` +
-    `   ${s.signature}`
+    `${prefix}${parentTag}${s.name}  (${s.kind})  ${s.file}:${s.line}${exp}\n` + `   ${s.signature}`
   );
 }
 
@@ -89,7 +80,9 @@ function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
   // We don't know upfront whether this is a callers or callees listing, so the
   // safest thing is to show both ends.
   const fromSym = idx.findById(e.fromId);
-  const fromName = fromSym ? `${fromSym.parent ? fromSym.parent + '.' : ''}${fromSym.name}` : e.fromId;
+  const fromName = fromSym
+    ? `${fromSym.parent ? fromSym.parent + '.' : ''}${fromSym.name}`
+    : e.fromId;
   const toLabel = e.toId
     ? (() => {
         const t = idx.findById(e.toId);
@@ -169,7 +162,7 @@ const TOOLS = [
   {
     name: 'gp_callers',
     description:
-      "List callers of a symbol (who calls it) or callees (what it calls). " +
+      'List callers of a symbol (who calls it) or callees (what it calls). ' +
       "Use direction='callers' for impact analysis ('what breaks if I " +
       "change this?'); direction='callees' to see what a function depends on.",
     inputSchema: {
@@ -350,9 +343,7 @@ function handleGpCallers(args: GpCallersArgs): ToolResult {
   }
 
   const verb = direction === 'callers' ? 'callers of' : 'callees of';
-  const header =
-    `${edges.length} ${verb} ${target.name} ` +
-    `(${target.file}:${target.line}):\n`;
+  const header = `${edges.length} ${verb} ${target.name} ` + `(${target.file}:${target.line}):\n`;
   const body = edges.map((e, i) => fmtEdge(e, idx, i)).join('\n');
   return { text: header + body, results: edges.length };
 }
@@ -374,9 +365,7 @@ function fmtImpactCaller(c: ImpactCaller, idx: GraphIndex): string {
 function fmtImpactReport(report: ImpactResult, idx: GraphIndex): string {
   const t = report.target;
   const lines: string[] = [];
-  lines.push(
-    `Impact of changing ${t.name} (${t.file}:${t.line}, kind=${t.kind}):`,
-  );
+  lines.push(`Impact of changing ${t.name} (${t.file}:${t.line}, kind=${t.kind}):`);
   lines.push('');
 
   lines.push(`Direct callers (${report.stats.directCount}):`);
@@ -403,9 +392,7 @@ function fmtImpactReport(report: ImpactResult, idx: GraphIndex): string {
   }
   lines.push('');
 
-  lines.push(
-    `Public API: ${report.publicApi.exported ? 'YES (exported)' : 'no (internal)'}`,
-  );
+  lines.push(`Public API: ${report.publicApi.exported ? 'YES (exported)' : 'no (internal)'}`);
   lines.push(`  ${report.publicApi.reason}`);
   lines.push('');
 
@@ -420,9 +407,7 @@ function fmtImpactReport(report: ImpactResult, idx: GraphIndex): string {
         }`
       : `Summary: ${totalCallers} callsite(s) across ` +
         `${report.stats.sourceFileCount} file(s)` +
-        (report.stats.testCount > 0
-          ? ` + ${report.stats.testCount} test(s)`
-          : '') +
+        (report.stats.testCount > 0 ? ` + ${report.stats.testCount} test(s)` : '') +
         `. ` +
         (report.publicApi.exported
           ? `Renaming is a BREAKING change for the module's public API.`
@@ -457,8 +442,7 @@ function handleGpImpact(args: GpImpactArgs): ToolResult {
   }
 
   const text = fmtImpactReport(report, idx);
-  const totalResults =
-    report.stats.directCount + report.stats.transitiveCount;
+  const totalResults = report.stats.directCount + report.stats.transitiveCount;
   return { text, results: totalResults };
 }
 
@@ -486,79 +470,72 @@ export function buildMcpServer(): Server {
 
     // We need to know the repo path *before* validation to drive the log,
     // so the log captures even invalid-input attempts. Fall back to cwd.
-    const repoRootForLog = resolve(
-      typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd(),
-    );
+    const repoRootForLog = resolve(typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd());
 
-    return withInteractionLog(
-      repoRootForLog,
-      name,
-      rawArgs,
-      async () => {
-        // Validate first
-        let result: ToolResult;
-        switch (name) {
-          case 'gp_stats': {
-            const v = validateGpStats(rawArgs);
-            if (!v.ok) {
-              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-              break;
-            }
-            result = handleGpStats(v.value);
+    return withInteractionLog(repoRootForLog, name, rawArgs, async () => {
+      // Validate first
+      let result: ToolResult;
+      switch (name) {
+        case 'gp_stats': {
+          const v = validateGpStats(rawArgs);
+          if (!v.ok) {
+            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
             break;
           }
-          case 'gp_index': {
-            const v = validateGpIndex(rawArgs);
-            if (!v.ok) {
-              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-              break;
-            }
-            result = await handleGpIndex(v.value);
-            break;
-          }
-          case 'gp_recall': {
-            const v = validateGpRecall(rawArgs);
-            if (!v.ok) {
-              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-              break;
-            }
-            result = handleGpRecall(v.value);
-            break;
-          }
-          case 'gp_callers': {
-            const v = validateGpCallers(rawArgs);
-            if (!v.ok) {
-              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-              break;
-            }
-            result = handleGpCallers(v.value);
-            break;
-          }
-          case 'gp_impact': {
-            const v = validateGpImpact(rawArgs);
-            if (!v.ok) {
-              result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-              break;
-            }
-            result = handleGpImpact(v.value);
-            break;
-          }
-          default:
-            result = { text: `Unknown tool: ${name}`, results: 0, isError: true };
+          result = handleGpStats(v.value);
+          break;
         }
+        case 'gp_index': {
+          const v = validateGpIndex(rawArgs);
+          if (!v.ok) {
+            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+            break;
+          }
+          result = await handleGpIndex(v.value);
+          break;
+        }
+        case 'gp_recall': {
+          const v = validateGpRecall(rawArgs);
+          if (!v.ok) {
+            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+            break;
+          }
+          result = handleGpRecall(v.value);
+          break;
+        }
+        case 'gp_callers': {
+          const v = validateGpCallers(rawArgs);
+          if (!v.ok) {
+            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+            break;
+          }
+          result = handleGpCallers(v.value);
+          break;
+        }
+        case 'gp_impact': {
+          const v = validateGpImpact(rawArgs);
+          if (!v.ok) {
+            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
+            break;
+          }
+          result = handleGpImpact(v.value);
+          break;
+        }
+        default:
+          result = { text: `Unknown tool: ${name}`, results: 0, isError: true };
+      }
 
-        return {
-          // Caller (this lambda) returns to the dispatcher which sends to the
-          // MCP client. We also return interaction-log metadata.
-          value: {
-            content: [{ type: 'text', text: result.text }] as const,
-            isError: result.isError,
-          },
-          results: result.results,
-          error: result.isError ? result.text.slice(0, 200) : undefined,
-        };
-      },
-    ).then((v) => v);
+      return {
+        // Caller (this lambda) returns to the dispatcher which sends to the
+        // MCP client. We also return interaction-log metadata.
+        value: {
+          content: [{ type: 'text', text: result.text }] as const,
+          isError: result.isError,
+        },
+        results: result.results,
+        error: result.isError ? result.text.slice(0, 200) : undefined,
+      };
+    }).then((v) => v);
   });
 
   return server;

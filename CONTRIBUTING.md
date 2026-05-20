@@ -31,9 +31,9 @@ your local build by adding to `~/.claude.json`:
   "mcpServers": {
     "graphpilot-dev": {
       "command": "node",
-      "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"]
-    }
-  }
+      "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"],
+    },
+  },
 }
 ```
 
@@ -50,7 +50,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org):
 - `chore: bump deps`
 - `refactor: simplify symbol id format`
 
-One topic per commit. Commit messages explain the *why*, not just the *what*.
+One topic per commit. Commit messages explain the _why_, not just the _what_.
 
 ## Pull requests
 

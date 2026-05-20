@@ -62,9 +62,7 @@ describe('validateGraph — accepts well-formed input', () => {
   });
 
   it('accepts toId: null (unresolved edge)', () => {
-    const out = validateGraph(
-      validGraph({ edges: [validEdge({ toId: null })] }),
-    );
+    const out = validateGraph(validGraph({ edges: [validEdge({ toId: null })] }));
     expect(out).not.toBeNull();
     expect(out!.edges[0].toId).toBeNull();
   });
@@ -131,11 +129,7 @@ describe('validateGraph — malformed entries are skipped, not fatal', () => {
   it('drops symbols missing required fields', () => {
     const out = validateGraph(
       validGraph({
-        symbols: [
-          validSymbol(),
-          validSymbol({ id: undefined }),
-          validSymbol({ line: -1 }),
-        ],
+        symbols: [validSymbol(), validSymbol({ id: undefined }), validSymbol({ line: -1 })],
       }),
     );
     expect(out!.symbols.length).toBe(1);
@@ -144,11 +138,7 @@ describe('validateGraph — malformed entries are skipped, not fatal', () => {
   it('drops edges with bogus toId type', () => {
     const out = validateGraph(
       validGraph({
-        edges: [
-          validEdge(),
-          validEdge({ toId: 42 }),
-          validEdge({ toId: { tricky: 'object' } }),
-        ],
+        edges: [validEdge(), validEdge({ toId: 42 }), validEdge({ toId: { tricky: 'object' } })],
       }),
     );
     expect(out!.edges.length).toBe(1);

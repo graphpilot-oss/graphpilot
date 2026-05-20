@@ -9,10 +9,10 @@ everywhere: tell the client to launch `graphpilot mcp` (or
 
 ## Two ways to invoke GraphPilot
 
-| Mode | Command + args | When to use |
-|---|---|---|
-| Local build | `node /abs/path/to/graphpilot/dist/cli.js mcp` | Pre-v0.1.0, contributors, dev mode |
-| `npx` | `npx graphpilot mcp` | Once v0.1.0 ships to npm (preferred) |
+| Mode        | Command + args                                 | When to use                          |
+| ----------- | ---------------------------------------------- | ------------------------------------ |
+| Local build | `node /abs/path/to/graphpilot/dist/cli.js mcp` | Pre-v0.1.0, contributors, dev mode   |
+| `npx`       | `npx graphpilot mcp`                           | Once v0.1.0 ships to npm (preferred) |
 
 Examples below show both. Pick whichever matches your install.
 
@@ -28,12 +28,9 @@ Examples below show both. Pick whichever matches your install.
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": [
-        "/Users/you/code/graphpilot/dist/cli.js",
-        "mcp"
-      ]
-    }
-  }
+      "args": ["/Users/you/code/graphpilot/dist/cli.js", "mcp"],
+    },
+  },
 }
 ```
 
@@ -44,9 +41,9 @@ Or post-v0.1.0:
   "mcpServers": {
     "graphpilot": {
       "command": "npx",
-      "args": ["graphpilot", "mcp"]
-    }
-  }
+      "args": ["graphpilot", "mcp"],
+    },
+  },
 }
 ```
 
@@ -74,12 +71,9 @@ hot-reload — you must relaunch.
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": [
-        "/Users/you/code/graphpilot/dist/cli.js",
-        "mcp"
-      ]
-    }
-  }
+      "args": ["/Users/you/code/graphpilot/dist/cli.js", "mcp"],
+    },
+  },
 }
 ```
 
@@ -108,14 +102,11 @@ icon → "Edit MCP Settings". Then add:
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": [
-        "/Users/you/code/graphpilot/dist/cli.js",
-        "mcp"
-      ],
+      "args": ["/Users/you/code/graphpilot/dist/cli.js", "mcp"],
       "disabled": false,
-      "autoApprove": []
-    }
-  }
+      "autoApprove": [],
+    },
+  },
 }
 ```
 
@@ -133,12 +124,9 @@ with a green status dot.
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": [
-        "/Users/you/code/graphpilot/dist/cli.js",
-        "mcp"
-      ]
-    }
-  }
+      "args": ["/Users/you/code/graphpilot/dist/cli.js", "mcp"],
+    },
+  },
 }
 ```
 
@@ -160,14 +148,11 @@ Continue uses `~/.continue/config.json` (global) or
         "transport": {
           "type": "stdio",
           "command": "node",
-          "args": [
-            "/Users/you/code/graphpilot/dist/cli.js",
-            "mcp"
-          ]
-        }
-      }
-    ]
-  }
+          "args": ["/Users/you/code/graphpilot/dist/cli.js", "mcp"],
+        },
+      },
+    ],
+  },
 }
 ```
 
@@ -205,8 +190,8 @@ you fire a test call and see the JSON-RPC frames.
 
 ## Environment variables
 
-| Variable | Effect |
-|---|---|
+| Variable              | Effect                                                                |
+| --------------------- | --------------------------------------------------------------------- |
 | `GRAPHPILOT_NO_LOG=1` | Disable the interaction log (`~/.graphpilot/<id>/interactions.jsonl`) |
 
 There are intentionally **no other env vars**. No API keys, no telemetry
@@ -232,14 +217,14 @@ If the response includes repo id, file/symbol/edge counts, and an
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Server connects then immediately disconnects | Server crashing on startup, or you're on a build older than the Day-10 stdio fix | Run `node dist/cli.js mcp` in a terminal — inspect stderr for the error. Rebuild from `main`. |
-| Client shows no servers | Config file has a JSON syntax error | Validate JSON; clients often silently ignore broken configs |
-| Tools list but every call returns "No index found" | Path mismatch — Claude's `cwd` ≠ the path you indexed | Pass an explicit `path: "/abs/path"` argument to each tool call |
-| Some `gp_*` tools missing from the catalog | Stale build cached by the client | `pnpm build` then fully restart the client |
-| stderr says "Failed to load native bindings" | `tree-sitter` native module didn't compile | `pnpm approve-builds --all && pnpm rebuild`. If on Node 23+, drop to Node 22 LTS. |
-| Tool returns "Invalid input: Unknown field(s)" | Caller passed an unrecognized argument | Schemas are strict — only the documented fields are allowed |
+| Symptom                                            | Likely cause                                                                     | Fix                                                                                           |
+| -------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Server connects then immediately disconnects       | Server crashing on startup, or you're on a build older than the Day-10 stdio fix | Run `node dist/cli.js mcp` in a terminal — inspect stderr for the error. Rebuild from `main`. |
+| Client shows no servers                            | Config file has a JSON syntax error                                              | Validate JSON; clients often silently ignore broken configs                                   |
+| Tools list but every call returns "No index found" | Path mismatch — Claude's `cwd` ≠ the path you indexed                            | Pass an explicit `path: "/abs/path"` argument to each tool call                               |
+| Some `gp_*` tools missing from the catalog         | Stale build cached by the client                                                 | `pnpm build` then fully restart the client                                                    |
+| stderr says "Failed to load native bindings"       | `tree-sitter` native module didn't compile                                       | `pnpm approve-builds --all && pnpm rebuild`. If on Node 23+, drop to Node 22 LTS.             |
+| Tool returns "Invalid input: Unknown field(s)"     | Caller passed an unrecognized argument                                           | Schemas are strict — only the documented fields are allowed                                   |
 
 Anything not in this table → please file an
 [issue](https://github.com/codeakki/graphpilot/issues) with the agent's

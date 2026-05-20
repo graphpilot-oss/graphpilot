@@ -12,17 +12,13 @@ import { join } from 'node:path';
 
 describe('redactSecrets — known patterns', () => {
   it('redacts OpenAI / Anthropic sk- keys', () => {
-    const out = redactSecrets(
-      'const API_KEY = "sk-abcdefghij1234567890ABCDEF";',
-    );
+    const out = redactSecrets('const API_KEY = "sk-abcdefghij1234567890ABCDEF";');
     expect(out).toContain('sk-***REDACTED***');
     expect(out).not.toContain('abcdefghij1234567890');
   });
 
   it('redacts sk-ant- prefix variant', () => {
-    const out = redactSecrets(
-      'const k = "sk-ant-api03-abc123XYZ_thisIsAFakeKey-1234567890";',
-    );
+    const out = redactSecrets('const k = "sk-ant-api03-abc123XYZ_thisIsAFakeKey-1234567890";');
     expect(out).toContain('sk-***REDACTED***');
     expect(out).not.toContain('api03-abc123');
   });
@@ -65,9 +61,7 @@ describe('redactSecrets — known patterns', () => {
   });
 
   it('redacts a generic long high-entropy token inside quotes', () => {
-    const out = redactSecrets(
-      'const s = "X9aZ8bC7dE6fG5hI4jK3lM2nO1pQ0rS9tU8vW7xY6zA";',
-    );
+    const out = redactSecrets('const s = "X9aZ8bC7dE6fG5hI4jK3lM2nO1pQ0rS9tU8vW7xY6zA";');
     expect(out).toContain('***REDACTED-LONG-TOKEN***');
     expect(out).not.toContain('X9aZ8bC7dE6fG5hI4jK3lM2nO1pQ0rS9tU8vW7xY6zA');
   });

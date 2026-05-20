@@ -55,10 +55,7 @@ describe('GraphIndex.findByName', () => {
 
   it('exact match is case-insensitive by default', () => {
     const r = idx.findByName('parsetoken');
-    expect(r.map((s) => s.id)).toEqual([
-      'a.ts#parseToken@1',
-      'b.ts#parseToken@20',
-    ]);
+    expect(r.map((s) => s.id)).toEqual(['a.ts#parseToken@1', 'b.ts#parseToken@20']);
   });
 
   it('exact-case match ranks above case-folded matches', () => {

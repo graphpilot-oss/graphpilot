@@ -69,11 +69,7 @@ export function parseFile(path: string): ParsedFile | null {
   return parseSource(path, source, lang);
 }
 
-export function parseSource(
-  path: string,
-  source: string,
-  lang: ParsedFile['lang'],
-): ParsedFile {
+export function parseSource(path: string, source: string, lang: ParsedFile['lang']): ParsedFile {
   const tree = getParser(lang).parse(source);
   return { path, lang, tree, source };
 }

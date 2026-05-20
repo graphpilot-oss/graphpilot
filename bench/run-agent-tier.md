@@ -10,9 +10,9 @@
 
 ## Why Tier B is separate
 
-Tier A measures *whether the tools return the right info*. Tier B
-measures *whether the agent reaches the right conclusion using those
-tools*. Both matter; they answer different questions.
+Tier A measures _whether the tools return the right info_. Tier B
+measures _whether the agent reaches the right conclusion using those
+tools_. Both matter; they answer different questions.
 
 Tier A is automatable. Tier B is not — it requires:
 
@@ -33,7 +33,7 @@ benchmark commit; in scope for a separate launch-prep session.
   - **Baseline:** vanilla Claude Code, no MCP servers
   - **With GraphPilot:** Claude Code with the graphpilot MCP server
     configured + a CLAUDE.md routing rule pointing structural questions
-    at the gp_* tools
+    at the gp\_\* tools
   - **With CodeGraphContext** (optional but punchy): the closest OSS
     competitor, same setup
 
@@ -62,13 +62,13 @@ them is what keeps the result believable.
 
 For each `(task, condition)` cell:
 
-| Metric | How |
-|---|---|
-| **Task success** (0/1) | Human eval against a hand-written rubric |
+| Metric                  | How                                                |
+| ----------------------- | -------------------------------------------------- |
+| **Task success** (0/1)  | Human eval against a hand-written rubric           |
 | **Hallucination count** | Manual count of fabricated names / paths / imports |
-| **Token cost** | Sum of input+output tokens from Claude Code's log |
-| **Wall-clock** | Stopwatch from prompt-submit to final answer |
-| **Clean patch apply** | Did the proposed diff apply without conflict? |
+| **Token cost**          | Sum of input+output tokens from Claude Code's log  |
+| **Wall-clock**          | Stopwatch from prompt-submit to final answer       |
+| **Clean patch apply**   | Did the proposed diff apply without conflict?      |
 
 ### Scoring
 
@@ -101,9 +101,9 @@ If reality comes back at 5/10 vs 4/10, publish that — don't fake it.
 - Running Tier B costs real money (~$10–20 per pass in Claude tokens)
   and ~4–6 hours of attention. Worth doing right, in a focused session,
   not interleaved with development.
-- The Tier-A bytes-reduction number (99.9 %) is *already* sufficient
-  for a Show HN headline: *"99% fewer tokens needed to answer
-  structural questions in your TypeScript codebase."*
+- The Tier-A bytes-reduction number (99.9 %) is _already_ sufficient
+  for a Show HN headline: _"99% fewer tokens needed to answer
+  structural questions in your TypeScript codebase."_
 
 ## Estimated effort
 

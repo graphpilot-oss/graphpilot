@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-  unlinkSync,
-  existsSync,
-  readFileSync,
-} from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, unlinkSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { GraphWatcher } from '../src/watcher.js';
@@ -44,10 +37,7 @@ describe('GraphWatcher — initial state', () => {
   });
 
   it('loads existing graph from disk if present', async () => {
-    writeFileSync(
-      join(workDir, 'hello.ts'),
-      'export function hello() { return 1; }\n',
-    );
+    writeFileSync(join(workDir, 'hello.ts'), 'export function hello() { return 1; }\n');
     const w = new GraphWatcher(workDir, { log: silentLog() });
     await w.fullReindex();
     expect(w.currentGraph.symbols.length).toBeGreaterThan(0);
@@ -61,9 +51,7 @@ describe('GraphWatcher — initial state', () => {
     expect(() => new GraphWatcher(homedir(), { log: silentLog() })).toThrow(
       /home directory|system path/i,
     );
-    expect(() => new GraphWatcher('/', { log: silentLog() })).toThrow(
-      /system path/i,
-    );
+    expect(() => new GraphWatcher('/', { log: silentLog() })).toThrow(/system path/i);
   });
 });
 
@@ -82,7 +70,7 @@ describe('GraphWatcher — applyUpdate (single-file change)', () => {
     expect(names).toContain('appeared');
   });
 
-  it('replaces a file\'s symbols when it changes (rename function)', async () => {
+  it("replaces a file's symbols when it changes (rename function)", async () => {
     const file = join(workDir, 'a.ts');
     writeFileSync(file, 'export function oldName() { return 1; }\n');
     const w = new GraphWatcher(workDir, { log: silentLog() });
@@ -100,10 +88,7 @@ describe('GraphWatcher — applyUpdate (single-file change)', () => {
 
   it('updates edges when a caller appears that resolves a previously-unresolved name', async () => {
     // Start with a self-contained caller that calls a not-yet-existing function
-    writeFileSync(
-      join(workDir, 'consumer.ts'),
-      `function consume() { helper(); return 1; }\n`,
-    );
+    writeFileSync(join(workDir, 'consumer.ts'), `function consume() { helper(); return 1; }\n`);
     const w = new GraphWatcher(workDir, { log: silentLog() });
     await w.fullReindex();
     const unresolvedBefore = w.currentGraph.edges.filter(
@@ -116,18 +101,13 @@ describe('GraphWatcher — applyUpdate (single-file change)', () => {
     writeFileSync(helperFile, 'export function helper() { return 7; }\n');
     await w.applyUpdate(helperFile, 'add');
 
-    const resolved = w.currentGraph.edges.find(
-      (e) => e.toName === 'helper' && e.toId !== null,
-    );
+    const resolved = w.currentGraph.edges.find((e) => e.toName === 'helper' && e.toId !== null);
     expect(resolved).toBeDefined();
     expect(resolved!.toId).toMatch(/helper/);
   });
 
   it('drops edges for a removed caller', async () => {
-    writeFileSync(
-      join(workDir, 'target.ts'),
-      'export function target() { return 1; }\n',
-    );
+    writeFileSync(join(workDir, 'target.ts'), 'export function target() { return 1; }\n');
     writeFileSync(
       join(workDir, 'caller.ts'),
       'import { target } from "./target";\nfunction call() { return target(); }\n',
@@ -142,9 +122,7 @@ describe('GraphWatcher — applyUpdate (single-file change)', () => {
     writeFileSync(callerFile, 'import { target } from "./target";\n');
     await w.applyUpdate(callerFile, 'change');
 
-    const callTargetEdges = w.currentGraph.edges.filter(
-      (e) => e.toName === 'target',
-    );
+    const callTargetEdges = w.currentGraph.edges.filter((e) => e.toName === 'target');
     expect(callTargetEdges.length).toBe(0);
   });
 
@@ -172,10 +150,7 @@ describe('GraphWatcher — applyDeletion', () => {
     const a = join(workDir, 'a.ts');
     const b = join(workDir, 'b.ts');
     writeFileSync(a, 'export function fromA() { return 1; }\n');
-    writeFileSync(
-      b,
-      'import { fromA } from "./a";\nexport function fromB() { return fromA(); }\n',
-    );
+    writeFileSync(b, 'import { fromA } from "./a";\nexport function fromB() { return fromA(); }\n');
 
     const w = new GraphWatcher(workDir, { log: silentLog() });
     await w.fullReindex();
@@ -240,10 +215,7 @@ describe('GraphWatcher — on-disk side effects', () => {
 
     writeFileSync(a, 'export function a2() {}\n');
     writeFileSync(b, 'export function b2() {}\n');
-    await Promise.all([
-      w.applyUpdate(a, 'change'),
-      w.applyUpdate(b, 'change'),
-    ]);
+    await Promise.all([w.applyUpdate(a, 'change'), w.applyUpdate(b, 'change')]);
 
     const names = w.currentGraph.symbols.map((s) => s.name).sort();
     expect(names).toEqual(['a2', 'b2']);

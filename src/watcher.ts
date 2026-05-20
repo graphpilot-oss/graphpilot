@@ -21,12 +21,7 @@ import { realpathSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
-import {
-  extractRawCalls,
-  resolveCallEdges,
-  type RawCall,
-  type CallEdge,
-} from './edges.js';
+import { extractRawCalls, resolveCallEdges, type RawCall, type CallEdge } from './edges.js';
 import { saveGraph, loadGraph, repoIdFor, type Graph } from './storage.js';
 import { indexDirectory } from './indexer.js';
 import { validateRootPath, MAX_FILES_PER_INDEX } from './validation.js';
@@ -62,14 +57,7 @@ const DEFAULT_IGNORE = [
   /\.d\.ts$/,
 ];
 
-const WATCHED_EXT = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-]);
+const WATCHED_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 
 function isWatchableFile(absPath: string): boolean {
   const dot = absPath.lastIndexOf('.');

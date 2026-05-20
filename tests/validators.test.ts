@@ -170,9 +170,7 @@ describe('validateGpImpact', () => {
   });
 
   it('rejects extra keys', () => {
-    expect(
-      validateGpImpact({ symbol: 'x', surprise: 'hello' }).ok,
-    ).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', surprise: 'hello' }).ok).toBe(false);
   });
 
   it('rejects wrong types', () => {

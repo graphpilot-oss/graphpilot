@@ -24,14 +24,7 @@ export interface IndexOptions {
   relativePaths?: boolean;
 }
 
-const DEFAULT_INCLUDE = [
-  '**/*.ts',
-  '**/*.tsx',
-  '**/*.js',
-  '**/*.jsx',
-  '**/*.mjs',
-  '**/*.cjs',
-];
+const DEFAULT_INCLUDE = ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'];
 
 const DEFAULT_IGNORE = [
   '**/node_modules/**',

@@ -155,9 +155,7 @@ export class BaselineRunner {
         // at which *.test.ts files contain it.
         const { bytesRead: br, matchedFiles } = this.grepScan(task.query);
         bytesRead = br;
-        returned = [...matchedFiles]
-          .filter((f) => /\.(test|spec)\.[jt]sx?$/.test(f))
-          .sort();
+        returned = [...matchedFiles].filter((f) => /\.(test|spec)\.[jt]sx?$/.test(f)).sort();
         break;
       }
 

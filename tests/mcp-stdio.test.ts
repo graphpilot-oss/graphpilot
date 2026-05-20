@@ -71,8 +71,7 @@ function spawnMcp(): Driver {
     while (replies.length < n) {
       if (Date.now() > deadline) {
         throw new Error(
-          `Timed out waiting for ${n} replies; got ${replies.length}. ` +
-            `STDERR was:\n${stderr}`,
+          `Timed out waiting for ${n} replies; got ${replies.length}. ` + `STDERR was:\n${stderr}`,
         );
       }
       await new Promise((r) => setTimeout(r, 20));
@@ -94,7 +93,16 @@ function spawnMcp(): Driver {
     });
   }
 
-  return { proc, send, awaitReplies, replies, get stderr() { return stderr; }, close } as Driver;
+  return {
+    proc,
+    send,
+    awaitReplies,
+    replies,
+    get stderr() {
+      return stderr;
+    },
+    close,
+  } as Driver;
 }
 
 describe.skipIf(shouldSkip)('MCP server over real stdio (subprocess)', () => {
@@ -128,13 +136,7 @@ describe.skipIf(shouldSkip)('MCP server over real stdio (subprocess)', () => {
       const replies = await d.awaitReplies(2);
       const list = replies[1];
       const names = (list.result?.tools ?? []).map((t: any) => t.name).sort();
-      expect(names).toEqual([
-        'gp_callers',
-        'gp_impact',
-        'gp_index',
-        'gp_recall',
-        'gp_stats',
-      ]);
+      expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall', 'gp_stats']);
 
       // Now call a tool — proves the process is still alive after tools/list
       d.send('tools/call', {

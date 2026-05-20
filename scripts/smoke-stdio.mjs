@@ -50,8 +50,7 @@ async function awaitReplyCount(n) {
   while (replies.length < n) {
     if (Date.now() > deadline) {
       throw new Error(
-        `Timed out waiting for ${n} replies (got ${replies.length}). ` +
-          `STDERR was:\n${stderr}`,
+        `Timed out waiting for ${n} replies (got ${replies.length}). ` + `STDERR was:\n${stderr}`,
       );
     }
     await new Promise((r) => setTimeout(r, 50));

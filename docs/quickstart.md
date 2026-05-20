@@ -85,12 +85,9 @@ Edit `~/.claude.json` (create the file if it doesn't exist):
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": [
-        "/absolute/path/to/graphpilot/dist/cli.js",
-        "mcp"
-      ]
-    }
-  }
+      "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"],
+    },
+  },
 }
 ```
 
@@ -101,9 +98,9 @@ Once v0.1.0 ships to npm, you can simplify to:
   "mcpServers": {
     "graphpilot": {
       "command": "npx",
-      "args": ["graphpilot", "mcp"]
-    }
-  }
+      "args": ["graphpilot", "mcp"],
+    },
+  },
 }
 ```
 
@@ -158,13 +155,14 @@ You shouldn't have to type "use graphpilot to..." every time. Add a
 
 ```markdown
 When asked any of:
+
 - "who calls X" / "what uses X" / "where is X called from"
 - "what does X call" / "what does X depend on"
 - "rename X — what breaks" / "impact of changing X"
 - "find function X" / "where is X defined"
 
 → Use graphpilot MCP tools (`gp_recall`, `gp_callers`) BEFORE grep or
-  reading files. Graphpilot is a pre-built code-graph for this repo.
+reading files. Graphpilot is a pre-built code-graph for this repo.
 
 Fall back to grep/read for: comments, string literals, config files,
 languages other than TS/JS, git history.
@@ -191,13 +189,13 @@ When `gp_impact` is part of the routing, add this line so it's used too:
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| `/mcp` doesn't list graphpilot | Run `pnpm build` again, then **fully** quit and reopen Claude Code |
-| Every tool call returns "No GraphPilot index found" | Run `node dist/cli.js index /path` first, and pass an absolute `path` to tool calls |
-| Tool errors with "Invalid input: Unknown field(s)..." | Schemas are strict — remove extra fields from the tool call |
-| `pnpm install` fails on native modules | `pnpm approve-builds --all && pnpm rebuild` |
-| Server starts but never responds | You're on a build older than the Day-10 stdio fix; rebuild from `main` |
-| The server keeps showing the same stale data | Call `gp_index` from the agent (or re-run `node dist/cli.js index .`) |
+| Symptom                                               | Fix                                                                                 |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `/mcp` doesn't list graphpilot                        | Run `pnpm build` again, then **fully** quit and reopen Claude Code                  |
+| Every tool call returns "No GraphPilot index found"   | Run `node dist/cli.js index /path` first, and pass an absolute `path` to tool calls |
+| Tool errors with "Invalid input: Unknown field(s)..." | Schemas are strict — remove extra fields from the tool call                         |
+| `pnpm install` fails on native modules                | `pnpm approve-builds --all && pnpm rebuild`                                         |
+| Server starts but never responds                      | You're on a build older than the Day-10 stdio fix; rebuild from `main`              |
+| The server keeps showing the same stale data          | Call `gp_index` from the agent (or re-run `node dist/cli.js index .`)               |
 
 Issues not in this table → [open an issue](https://github.com/codeakki/graphpilot/issues).

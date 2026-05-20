@@ -52,9 +52,7 @@ describe('T12 — banned network imports in src/', () => {
         `import x from '${mod}';\nexport const v = x;\n`,
       );
       expect(result.errorCount).toBeGreaterThanOrEqual(1);
-      const restricted = result.messages.find(
-        (m) => m.ruleId === 'no-restricted-imports',
-      );
+      const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
       expect(restricted).toBeDefined();
       expect(restricted!.message).toContain('No network in src/');
     });
@@ -69,9 +67,7 @@ describe('T6 — child_process banned in src/', () => {
         `import cp from '${mod}';\nexport const v = cp;\n`,
       );
       expect(result.errorCount).toBeGreaterThanOrEqual(1);
-      const restricted = result.messages.find(
-        (m) => m.ruleId === 'no-restricted-imports',
-      );
+      const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
       expect(restricted).toBeDefined();
       expect(restricted!.message).toContain('No child_process in src/');
     });
@@ -84,9 +80,7 @@ describe('Looser rules in tests/ and scripts/', () => {
       join(repoRoot, 'tests', '_fake.test.ts'),
       `import cp from 'child_process';\nexport const v = cp;\n`,
     );
-    const restricted = result.messages.find(
-      (m) => m.ruleId === 'no-restricted-imports',
-    );
+    const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
     expect(restricted).toBeUndefined();
   });
 
@@ -95,9 +89,7 @@ describe('Looser rules in tests/ and scripts/', () => {
       join(repoRoot, 'scripts', '_fake.mjs'),
       `import cp from 'child_process';\nexport const v = cp;\n`,
     );
-    const restricted = result.messages.find(
-      (m) => m.ruleId === 'no-restricted-imports',
-    );
+    const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
     expect(restricted).toBeUndefined();
   });
 });
@@ -108,9 +100,7 @@ describe('Normal imports in src/ pass clean', () => {
       join(repoRoot, 'src', '_fake.ts'),
       `import { join } from 'node:path';\nexport const v = join('a', 'b');\n`,
     );
-    const restricted = result.messages.find(
-      (m) => m.ruleId === 'no-restricted-imports',
-    );
+    const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
     expect(restricted).toBeUndefined();
   });
 });

@@ -9,13 +9,13 @@ numbers, no external download needed.
 
 From the most recent run (`bench/results/`):
 
-| Metric | GraphPilot | Grep baseline |
-|---|---|---|
-| Average F1 (10 tasks) | **0.89** | 0.42 |
-| Total bytes processed | **721 B** | 528.1 KB |
-| Byte reduction | **99.9 %** | — |
-| Winner counts | **7 wins · 2 ties · 1 loss** | 1 win |
-| Expected-winner accuracy | 9 / 10 | — |
+| Metric                   | GraphPilot                   | Grep baseline |
+| ------------------------ | ---------------------------- | ------------- |
+| Average F1 (10 tasks)    | **0.89**                     | 0.42          |
+| Total bytes processed    | **721 B**                    | 528.1 KB      |
+| Byte reduction           | **99.9 %**                   | —             |
+| Winner counts            | **7 wins · 2 ties · 1 loss** | 1 win         |
+| Expected-winner accuracy | 9 / 10                       | —             |
 
 The one loss is **deliberate**: task `t10` is a literal-string search,
 which GraphPilot doesn't index — exactly the kind of question grep is
@@ -41,22 +41,22 @@ can land later without losing context.
 
 10 hand-curated tasks (`tasks.ts`):
 
-| ID | Description | Kind | Expected winner |
-|---|---|---|---|
-| t01 | Direct callers of `analyzeImpact` | callers | graphpilot |
-| t02 | Direct callers of `extractSymbols` | callers | graphpilot |
-| t03 | Direct callers of `validateRootPath` | callers | graphpilot |
-| t04 | Symbols containing `parse` | recall-substring | graphpilot |
-| t05 | All interfaces under `src/` | kind-filter | graphpilot |
-| t06 | Blast radius of `extractSymbols` (depth 2) | impact | graphpilot |
-| t07 | Tests affected by changes to `parseFile` | tests-affected | graphpilot |
-| t08 | Symbols ending in `Args` | recall-substring | graphpilot |
-| t09 | Look up a symbol that doesn't exist | recall-miss | tie |
-| t10 | Literal occurrences of `"MAX_FILE_BYTES"` | string-literal | **grep** |
+| ID  | Description                                | Kind             | Expected winner |
+| --- | ------------------------------------------ | ---------------- | --------------- |
+| t01 | Direct callers of `analyzeImpact`          | callers          | graphpilot      |
+| t02 | Direct callers of `extractSymbols`         | callers          | graphpilot      |
+| t03 | Direct callers of `validateRootPath`       | callers          | graphpilot      |
+| t04 | Symbols containing `parse`                 | recall-substring | graphpilot      |
+| t05 | All interfaces under `src/`                | kind-filter      | graphpilot      |
+| t06 | Blast radius of `extractSymbols` (depth 2) | impact           | graphpilot      |
+| t07 | Tests affected by changes to `parseFile`   | tests-affected   | graphpilot      |
+| t08 | Symbols ending in `Args`                   | recall-substring | graphpilot      |
+| t09 | Look up a symbol that doesn't exist        | recall-miss      | tie             |
+| t10 | Literal occurrences of `"MAX_FILE_BYTES"`  | string-literal   | **grep**        |
 
 Every task carries its own `groundTruth` — the set of names/files the
 correct answer must contain. Ground truth was extracted from the live
-index when the corpus was authored; see *Refreshing* below if you change
+index when the corpus was authored; see _Refreshing_ below if you change
 the source code.
 
 ## How to reproduce
@@ -92,7 +92,7 @@ For each task:
    that contained a hit** as the cost an agent without structural
    memory would pay to read those files.
 
-3. **Score** each side's output as a *set* against the ground truth
+3. **Score** each side's output as a _set_ against the ground truth
    set: precision = TP / returned, recall = TP / ground-truth, F1 =
    harmonic mean.
 
@@ -101,7 +101,7 @@ For each task:
 
 ## Why the bytes metric matters more than F1
 
-F1 measures *correctness*. Bytes measures *cost*.
+F1 measures _correctness_. Bytes measures _cost_.
 
 For agents like Claude Code, **tokens are dollars**. Every byte the
 agent has to read costs the same. The 99.9 % byte reduction means a

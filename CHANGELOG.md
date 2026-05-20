@@ -55,8 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dev workflow
 
 - Pre-commit hooks via `lefthook` (added 2026-05-20):
-  - `pre-commit`: `pnpm typecheck` + ESLint on staged source files
-    (parallel). Hits sub-second on small changes.
+  - `pre-commit`: `pnpm typecheck` + ESLint + `prettier --check` on
+    staged source files (parallel). Hits sub-second on small changes.
   - `commit-msg`: Conventional Commits regex enforcement. Bad messages
     get a friendly error pointing at the format spec. Allows
     `Merge`/`Revert`/`fixup!`/`squash!` for ergonomics.
@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bypass for emergencies: `LEFTHOOK=0 git commit` or
     `LEFTHOOK_EXCLUDE=<jobname> git commit`. Installed automatically by
     `pnpm install`; no manual `lefthook install` required.
+- Prettier configured (added 2026-05-20): `.prettierrc.json` + scripts
+  `pnpm format` / `pnpm format:check`. Single quotes, trailing commas,
+  100-col print width, LF endings. Normalized 31 files in one mechanical
+  pass; wired into `pnpm check` and the lefthook pre-commit so future
+  drift gets blocked.
 - Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
   fields, type errors, out-of-range numbers, oversize strings.
 - Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool

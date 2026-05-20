@@ -37,11 +37,7 @@ export function extractSymbols(parsed: ParsedFile): SymbolRecord[] {
   return out;
 }
 
-function extractFromNode(
-  node: Parser.SyntaxNode,
-  parsed: ParsedFile,
-  out: SymbolRecord[],
-): void {
+function extractFromNode(node: Parser.SyntaxNode, parsed: ParsedFile, out: SymbolRecord[]): void {
   switch (node.type) {
     case 'function_declaration':
     case 'generator_function_declaration': {

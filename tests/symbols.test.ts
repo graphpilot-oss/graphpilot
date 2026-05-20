@@ -16,9 +16,7 @@ function symbolsOf(filename: string): SymbolRecord[] {
 function findOne(syms: SymbolRecord[], name: string, kind?: string) {
   const matches = syms.filter((s) => s.name === name && (!kind || s.kind === kind));
   if (matches.length !== 1) {
-    throw new Error(
-      `expected 1 match for ${name}/${kind ?? '*'}, got ${matches.length}`,
-    );
+    throw new Error(`expected 1 match for ${name}/${kind ?? '*'}, got ${matches.length}`);
   }
   return matches[0];
 }

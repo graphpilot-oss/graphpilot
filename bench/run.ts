@@ -50,10 +50,7 @@ interface BenchmarkReport {
   perTask: PerTaskResult[];
 }
 
-function pickWinner(
-  gp: Scored,
-  bl: Scored,
-): 'graphpilot' | 'grep' | 'tie' {
+function pickWinner(gp: Scored, bl: Scored): 'graphpilot' | 'grep' | 'tie' {
   const epsilon = 0.001;
   if (Math.abs(gp.f1 - bl.f1) < epsilon) return 'tie';
   return gp.f1 > bl.f1 ? 'graphpilot' : 'grep';
@@ -90,7 +87,9 @@ function summaryMarkdown(report: BenchmarkReport): string {
       `vs grep **${fmtBytes(a.baselineBytesTotal)}**` +
       ` (${fmt((1 - a.graphpilotBytesTotal / a.baselineBytesTotal) * 100, 1)}% reduction)`,
   );
-  lines.push(`- Winner counts: graphpilot **${a.graphpilotWins}** · grep **${a.baselineWins}** · tie **${a.ties}**`);
+  lines.push(
+    `- Winner counts: graphpilot **${a.graphpilotWins}** · grep **${a.baselineWins}** · tie **${a.ties}**`,
+  );
   lines.push(
     `- Expected-winner accuracy: **${a.expectedWinnerHits}/${a.totalTasks}** ` +
       `(${fmt((a.expectedWinnerHits / a.totalTasks) * 100, 0)}%)`,
@@ -169,9 +168,7 @@ async function main(): Promise<number> {
   }
 
   // Pull package.json version for the meta block.
-  const pkgVersion = JSON.parse(
-    readFileSync(join(repo, 'package.json'), 'utf8'),
-  ).version as string;
+  const pkgVersion = JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8')).version as string;
 
   const report: BenchmarkReport = {
     meta: {

@@ -64,10 +64,7 @@ interface ValidationContext {
   errors: string[];
 }
 
-function validateSymbol(
-  raw: unknown,
-  ctx: ValidationContext,
-): SymbolRecord | null {
+function validateSymbol(raw: unknown, ctx: ValidationContext): SymbolRecord | null {
   if (!isPlainObject(raw)) {
     ctx.errors.push('symbol entry is not an object');
     return null;
@@ -155,10 +152,7 @@ function validateEdge(raw: unknown, ctx: ValidationContext): CallEdge | null {
  *   - Final result has counts recomputed from surviving entries, so an
  *     attacker can't lie about symbolCount/edgeCount.
  */
-export function validateGraph(
-  raw: unknown,
-  errorsOut: string[] = [],
-): Graph | null {
+export function validateGraph(raw: unknown, errorsOut: string[] = []): Graph | null {
   const ctx: ValidationContext = { errors: errorsOut };
 
   if (!isPlainObject(raw)) {
@@ -167,9 +161,7 @@ export function validateGraph(
   }
 
   if (raw.version !== 1) {
-    ctx.errors.push(
-      `unsupported graph.json version: ${String(raw.version)} (expected 1)`,
-    );
+    ctx.errors.push(`unsupported graph.json version: ${String(raw.version)} (expected 1)`);
     return null;
   }
 

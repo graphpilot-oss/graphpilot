@@ -70,8 +70,7 @@ export const TASKS: Task[] = [
   {
     id: 't03-callers-validateRootPath',
     description: 'Find every direct caller of validateRootPath',
-    prompt:
-      'Where is validateRootPath used in the codebase? List every callsite.',
+    prompt: 'Where is validateRootPath used in the codebase? List every callsite.',
     kind: 'callers',
     query: 'validateRootPath',
     // Note: GraphWatcher constructor calls validateRootPath; the SymbolRecord
@@ -86,13 +85,7 @@ export const TASKS: Task[] = [
     prompt: 'List every function, class, or interface whose name contains "parse".',
     kind: 'recall-substring',
     query: 'parse',
-    groundTruth: [
-      'ParsedFile',
-      'getParser',
-      'parseFile',
-      'parseSource',
-      'parseToken',
-    ],
+    groundTruth: ['ParsedFile', 'getParser', 'parseFile', 'parseSource', 'parseToken'],
     expectedWinner: 'graphpilot',
     difficulty: 'low',
   },
@@ -132,8 +125,7 @@ export const TASKS: Task[] = [
   },
   {
     id: 't06-impact-extractSymbols-depth2',
-    description:
-      'Compute blast radius of changing extractSymbols (depth 2)',
+    description: 'Compute blast radius of changing extractSymbols (depth 2)',
     prompt:
       "If I change extractSymbols's signature, what functions will I need to update? Include indirect callers up to two hops.",
     kind: 'impact',
@@ -156,8 +148,7 @@ export const TASKS: Task[] = [
   {
     id: 't07-tests-affected-parseFile',
     description: 'Identify test files that exercise parseFile (directly)',
-    prompt:
-      'If I change the behavior of parseFile, which test files are most likely to break?',
+    prompt: 'If I change the behavior of parseFile, which test files are most likely to break?',
     kind: 'tests-affected',
     query: 'parseFile',
     // The test file containing symbolsOf which calls parseFile
@@ -171,13 +162,7 @@ export const TASKS: Task[] = [
     prompt: 'List every TypeScript type whose name ends with "Args".',
     kind: 'recall-substring',
     query: 'Args',
-    groundTruth: [
-      'GpCallersArgs',
-      'GpImpactArgs',
-      'GpIndexArgs',
-      'GpRecallArgs',
-      'GpStatsArgs',
-    ],
+    groundTruth: ['GpCallersArgs', 'GpImpactArgs', 'GpIndexArgs', 'GpRecallArgs', 'GpStatsArgs'],
     expectedWinner: 'graphpilot',
     difficulty: 'low',
   },
@@ -193,8 +178,7 @@ export const TASKS: Task[] = [
   },
   {
     id: 't10-string-literal-MAX_FILE_BYTES',
-    description:
-      'Find every literal occurrence of the constant name "MAX_FILE_BYTES"',
+    description: 'Find every literal occurrence of the constant name "MAX_FILE_BYTES"',
     prompt: 'Find every place the string "MAX_FILE_BYTES" appears in the source.',
     kind: 'string-literal',
     query: 'MAX_FILE_BYTES',

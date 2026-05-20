@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  logInteraction,
-  sanitizeInput,
-  withInteractionLog,
-} from '../src/interactions.js';
+import { logInteraction, sanitizeInput, withInteractionLog } from '../src/interactions.js';
 import { repoDir } from '../src/storage.js';
 
 const isWindows = process.platform === 'win32';
@@ -142,9 +138,7 @@ describe('logInteraction', () => {
       durationMs: 2,
       error: 'something broke',
     });
-    const entry = JSON.parse(
-      readFileSync(logPath(fakeRepoRoot), 'utf8').trim(),
-    );
+    const entry = JSON.parse(readFileSync(logPath(fakeRepoRoot), 'utf8').trim());
     expect(entry.error).toBe('something broke');
   });
 });
@@ -166,9 +160,7 @@ describe('withInteractionLog', () => {
     );
     expect(out).toEqual({ content: [{ type: 'text', text: 'ok' }] });
 
-    const entry = JSON.parse(
-      readFileSync(logPath(fakeRepoRoot), 'utf8').trim(),
-    );
+    const entry = JSON.parse(readFileSync(logPath(fakeRepoRoot), 'utf8').trim());
     expect(entry.tool).toBe('gp_recall');
     expect(entry.results).toBe(1);
     expect(typeof entry.durationMs).toBe('number');
@@ -181,9 +173,7 @@ describe('withInteractionLog', () => {
       }),
     ).rejects.toThrow('boom');
 
-    const entry = JSON.parse(
-      readFileSync(logPath(fakeRepoRoot), 'utf8').trim(),
-    );
+    const entry = JSON.parse(readFileSync(logPath(fakeRepoRoot), 'utf8').trim());
     expect(entry.error).toBe('boom');
     expect(entry.results).toBe(0);
   });

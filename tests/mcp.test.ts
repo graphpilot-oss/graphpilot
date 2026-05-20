@@ -38,14 +38,8 @@ beforeAll(async () => {
   // Wire client + server over an in-memory pipe.
   const server = buildMcpServer();
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
-  client = new Client(
-    { name: 'graphpilot-test', version: '0.0.0' },
-    { capabilities: {} },
-  );
-  await Promise.all([
-    server.connect(serverTransport),
-    client.connect(clientTransport),
-  ]);
+  client = new Client({ name: 'graphpilot-test', version: '0.0.0' }, { capabilities: {} });
+  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 });
 
 afterAll(async () => {
@@ -59,13 +53,7 @@ describe('MCP server: protocol handshake + tool catalog', () => {
   it('lists the v0.1 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual([
-      'gp_callers',
-      'gp_impact',
-      'gp_index',
-      'gp_recall',
-      'gp_stats',
-    ]);
+    expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall', 'gp_stats']);
   });
 
   it('every tool has a description and an object input schema', async () => {

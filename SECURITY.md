@@ -33,10 +33,12 @@ Once we hit 1.0, this table will be expanded to cover the last two minor version
 ## Scope
 
 In scope:
+
 - The `graphpilot` npm package itself
 - The MCP server implementation
 - Any data written to `~/.graphpilot/`
 
 Out of scope:
+
 - Third-party MCP clients (Claude Code, Cursor, etc.) — report those upstream
-- Tree-sitter grammar bugs — report to the relevant tree-sitter-* repo
+- Tree-sitter grammar bugs — report to the relevant tree-sitter-\* repo
