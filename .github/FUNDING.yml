@@ -1,0 +1,20 @@
+# Powers the "Sponsor" button on the repo header.
+# https://docs.github.com/en/repositories/managing-your-repositorys-security/displaying-a-sponsor-button-in-your-repository
+#
+# Uncomment and fill in any platforms you actually use. Empty values
+# are ignored, but unset keys keep the button clean.
+
+github: [codeakki]
+
+# Other platforms (uncomment as you wire them up):
+# patreon: ''
+# open_collective: ''
+# ko_fi: ''
+# tidelift: ''         # 'npm/graphpilot' once on npm + Tidelift
+# community_bridge: ''
+# liberapay: ''
+# issuehunt: ''
+# polar: ''
+# buy_me_a_coffee: ''
+# thanks_dev: ''
+# custom: ['https://graphpilot.dev/sponsor']  # any URL once we have a domain

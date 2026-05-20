@@ -1,0 +1,22 @@
+# CODEOWNERS — auto-request review on every PR.
+#
+# Syntax: <path-glob> <reviewer> [<reviewer>...]
+# Reviewers are GitHub handles (no @) or team slugs (@org/team).
+#
+# Order matters: the LAST matching rule wins. Default rule first, then
+# overrides for paths that should pull in specific reviewers.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# Default: solo maintainer reviews everything.
+*       @codeakki
+
+# When co-maintainers join, add area-specific rules. For example:
+#
+#   /src/mcp/         @codeakki @some-mcp-expert
+#   /src/parser/      @codeakki @some-tree-sitter-expert
+#   /docs/            @codeakki @docs-lead
+#   /bench/           @codeakki @benchmark-owner
+#   /.github/         @codeakki                    # workflow changes are sensitive
+#
+# Until then, the default rule is enough.
