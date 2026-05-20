@@ -56,10 +56,16 @@ afterAll(async () => {
 });
 
 describe('MCP server: protocol handshake + tool catalog', () => {
-  it('lists the four Day-9 tools', async () => {
+  it('lists the v0.1 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(['gp_callers', 'gp_index', 'gp_recall', 'gp_stats']);
+    expect(names).toEqual([
+      'gp_callers',
+      'gp_impact',
+      'gp_index',
+      'gp_recall',
+      'gp_stats',
+    ]);
   });
 
   it('every tool has a description and an object input schema', async () => {
@@ -217,5 +223,125 @@ describe('MCP server: gp_index', () => {
     expect(text).toContain('Indexed');
     expect(text).toContain('Files:');
     expect(text).toContain('Symbols:');
+  });
+});
+
+describe('MCP server: gp_impact', () => {
+  // Build a richer fixture with a real caller chain so blast-radius output
+  // is non-trivial.
+  let impactDir: string;
+
+  beforeAll(async () => {
+    impactDir = mkdtempSync(join(tmpdir(), 'graphpilot-mcp-impact-'));
+    writeFileSync(
+      join(impactDir, 'auth.ts'),
+      `export function parseToken(t: string): string {\n` +
+        `  return t.trim();\n` +
+        `}\n` +
+        `\n` +
+        `export function authenticate(t: string): boolean {\n` +
+        `  return parseToken(t).length > 0;\n` +
+        `}\n`,
+    );
+    writeFileSync(
+      join(impactDir, 'api.ts'),
+      `import { parseToken } from './auth';\n` +
+        `\n` +
+        `export function handleLogin(t: string): string {\n` +
+        `  return parseToken(t);\n` +
+        `}\n`,
+    );
+    writeFileSync(
+      join(impactDir, 'auth.test.ts'),
+      `import { parseToken } from './auth';\n` +
+        `\n` +
+        `function testParse() {\n` +
+        `  return parseToken('x');\n` +
+        `}\n`,
+    );
+
+    const r = await indexDirectory(impactDir);
+    saveGraph({
+      version: 1,
+      repoId: repoIdFor(impactDir),
+      rootPath: impactDir,
+      indexedAt: new Date().toISOString(),
+      filesIndexed: r.filesIndexed,
+      symbolCount: r.symbols.length,
+      edgeCount: r.edges.length,
+      symbols: r.symbols,
+      edges: r.edges,
+    });
+  });
+
+  afterAll(() => {
+    if (impactDir && existsSync(impactDir)) {
+      rmSync(impactDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns isError when the symbol is unknown', async () => {
+    const res = await client.callTool({
+      name: 'gp_impact',
+      arguments: { symbol: 'doesNotExist', path: impactDir },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/no symbol found/i);
+  });
+
+  it('reports direct + transitive callers + public-API flag', async () => {
+    const res = await client.callTool({
+      name: 'gp_impact',
+      arguments: { symbol: 'parseToken', path: impactDir },
+    });
+    expect(res.isError).not.toBe(true);
+    const text = textOf(res);
+    // The target line
+    expect(text).toMatch(/Impact of changing parseToken/);
+    // Direct callers
+    expect(text).toMatch(/Direct callers/);
+    expect(text).toMatch(/authenticate/);
+    expect(text).toMatch(/handleLogin/);
+    // Test affected
+    expect(text).toMatch(/Tests likely affected/);
+    expect(text).toMatch(/auth\.test\.ts/);
+    // Public API
+    expect(text).toMatch(/Public API: YES/);
+    expect(text).toMatch(/BREAKING/i);
+    // Summary
+    expect(text).toMatch(/Summary:/);
+  });
+
+  it('respects the depth argument', async () => {
+    const res = await client.callTool({
+      name: 'gp_impact',
+      arguments: { symbol: 'parseToken', depth: 1, path: impactDir },
+    });
+    expect(res.isError).not.toBe(true);
+    // depth=1 should NOT include a Transitive section header
+    const text = textOf(res);
+    expect(text).toMatch(/Direct callers/);
+    expect(text).not.toMatch(/Transitive callers/);
+  });
+
+  it('rejects depth out of range', async () => {
+    const res = await client.callTool({
+      name: 'gp_impact',
+      arguments: { symbol: 'parseToken', depth: 99, path: impactDir },
+    });
+    expect(res.isError).toBe(true);
+  });
+
+  it('rejects unknown fields', async () => {
+    const res = await client.callTool({
+      name: 'gp_impact',
+      arguments: {
+        symbol: 'parseToken',
+        evilExtra: true,
+        path: impactDir,
+      },
+    });
+    expect(res.isError).toBe(true);
+    expect(textOf(res)).toMatch(/evilExtra/);
   });
 });

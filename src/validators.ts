@@ -207,7 +207,7 @@ export function validateGpCallers(input: unknown): Result<GpCallersArgs> {
 }
 
 // Tool name -> validator dispatcher (for the MCP server)
-export type ToolName = 'gp_index' | 'gp_recall' | 'gp_callers' | 'gp_stats';
+export type ToolName = 'gp_index' | 'gp_recall' | 'gp_callers' | 'gp_impact' | 'gp_stats';
 
 export interface GpStatsArgs {
   path?: string;
@@ -219,4 +219,37 @@ export function validateGpStats(input: unknown): Result<GpStatsArgs> {
   const path = pickString(input, 'path', { max: 1024 });
   if (!path.ok) return fail(path.error);
   return ok({ path: path.value });
+}
+
+export interface GpImpactArgs {
+  symbol: string;
+  depth?: number;
+  path?: string;
+}
+const GP_IMPACT_KEYS = ['symbol', 'depth', 'path'] as const;
+
+export function validateGpImpact(input: unknown): Result<GpImpactArgs> {
+  if (!isPlainObject(input)) return fail('arguments must be an object');
+  const extras = rejectExtraKeys(input, GP_IMPACT_KEYS);
+  if (!extras.ok) return fail(extras.error);
+
+  const symbol = pickString(input, 'symbol', { required: true, max: 500 });
+  if (!symbol.ok) return fail(symbol.error);
+  if (!symbol.value || symbol.value.trim() === '') {
+    return fail('symbol must be a non-empty string');
+  }
+
+  // BFS depth: hard-cap at 5. Deeper traversals explode in big repos and
+  // rarely add value — depth-3 already covers ~99% of real refactors.
+  const depth = pickNumber(input, 'depth', { min: 1, max: 5, integer: true });
+  if (!depth.ok) return fail(depth.error);
+
+  const path = pickString(input, 'path', { max: 1024 });
+  if (!path.ok) return fail(path.error);
+
+  return ok({
+    symbol: symbol.value,
+    depth: depth.value,
+    path: path.value,
+  });
 }

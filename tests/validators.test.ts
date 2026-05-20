@@ -3,6 +3,7 @@ import {
   validateGpIndex,
   validateGpRecall,
   validateGpCallers,
+  validateGpImpact,
   validateGpStats,
 } from '../src/validators.js';
 
@@ -128,5 +129,54 @@ describe('validateGpCallers', () => {
 
   it('rejects extra keys', () => {
     expect(validateGpCallers({ symbol: 'x', sql: 'drop table' }).ok).toBe(false);
+  });
+});
+
+describe('validateGpImpact', () => {
+  it('requires a non-empty symbol', () => {
+    expect(validateGpImpact({}).ok).toBe(false);
+    expect(validateGpImpact({ symbol: '' }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: '   ' }).ok).toBe(false);
+  });
+
+  it('accepts a minimal valid input', () => {
+    const r = validateGpImpact({ symbol: 'parseToken' });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.symbol).toBe('parseToken');
+      expect(r.value.depth).toBeUndefined();
+    }
+  });
+
+  it('accepts depth in range 1..5', () => {
+    expect(validateGpImpact({ symbol: 'x', depth: 1 }).ok).toBe(true);
+    expect(validateGpImpact({ symbol: 'x', depth: 3 }).ok).toBe(true);
+    expect(validateGpImpact({ symbol: 'x', depth: 5 }).ok).toBe(true);
+  });
+
+  it('rejects depth out of range', () => {
+    expect(validateGpImpact({ symbol: 'x', depth: 0 }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', depth: 6 }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', depth: -1 }).ok).toBe(false);
+  });
+
+  it('rejects non-integer depth', () => {
+    expect(validateGpImpact({ symbol: 'x', depth: 2.5 }).ok).toBe(false);
+  });
+
+  it('accepts path', () => {
+    const r = validateGpImpact({ symbol: 'x', path: '/tmp/repo' });
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects extra keys', () => {
+    expect(
+      validateGpImpact({ symbol: 'x', surprise: 'hello' }).ok,
+    ).toBe(false);
+  });
+
+  it('rejects wrong types', () => {
+    expect(validateGpImpact({ symbol: 42 }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', depth: '3' }).ok).toBe(false);
   });
 });

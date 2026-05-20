@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `gp_index` — re-index a repo from the agent
   - `gp_recall` — find symbols by name (exact CI by default, substring opt-in)
   - `gp_callers` — list callers or callees (with direction param)
+  - `gp_impact` — blast-radius analysis: direct callers, transitive
+    callers (BFS, depth 1–5), tests likely affected (heuristic on file
+    paths), and a public-API flag derived from `exported`. Answers "what
+    breaks if I rename X?" in a single tool call. Pure-function core in
+    `src/impact.ts`; cycle-safe; per-level cap with `truncated` flag.
 - Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
   fields, type errors, out-of-range numbers, oversize strings.
 - Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool
