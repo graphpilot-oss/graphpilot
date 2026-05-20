@@ -1,6 +1,5 @@
 /**
- * Strict schema validation for graph.json on load (T4 from
- * .notes/security.md).
+ * Strict schema validation for graph.json on load.
  *
  * Why this exists: anything we trust from disk is an attack surface. The
  * graph.json file lives in `~/.graphpilot/<repo-id>/` which is mode 0600,

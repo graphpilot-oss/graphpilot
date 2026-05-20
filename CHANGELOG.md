@@ -101,13 +101,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pnpm lint` as a gating job; meta-tests in `tests/lint-policy.test.ts`
   prove the rule fires on every banned import (catches rule-rot in
   future PRs).
-- Full threat model in `.notes/security.md` (private)
 
-### Pending
+### Pending (for v0.1.0 launch)
 
-- End-to-end test in Claude Code (manual setup)
-- Outcome benchmark vs baseline Claude Code
-- Graph-schema validation on load (T4)
-- Secret-pattern redaction in signatures/previews (T3)
+- Tier-B agent benchmark — Claude-Code-in-the-loop scoring on real
+  refactor tasks; produces the "X/10 vs Y/10" headline. Spec in
+  [`bench/run-agent-tier.md`](bench/run-agent-tier.md).
+- `release.yml` workflow + npm publish on tag.
+- CodeQL + dependency-review workflows.
+- Branch protection on `main` (GitHub web UI step).
+- Hero GIF + 30-second demo video.
+- Domain + landing page.
+- MCP registry submissions (Glama, PulseMCP, mcpservers.org,
+  `awesome-mcp-servers`).
+- `examples/<each-client>/` scaffolds.
 
 [Unreleased]: https://github.com/codeakki/graphpilot/commits/main

@@ -6,7 +6,8 @@
  *   { ok: true,  value: <typed args> }
  *   { ok: false, error: <human-readable> }
  *
- * Rules (defence-in-depth per .notes/security.md §5):
+ * Rules (defence-in-depth — JSON schema is declared in the tool catalog
+ * too; this is the second wall):
  *   - Reject extra unknown keys (defends against agent typos & tampering)
  *   - Type-check every field
  *   - Range-check numbers (limit is bounded, no NaN)

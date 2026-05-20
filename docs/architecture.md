@@ -51,7 +51,7 @@ see [quickstart.md](quickstart.md).
                                     │
                   ┌─────────────────▼──────────────────┐
                   │  mcp.ts                            │
-                  │  4 tools over stdio JSON-RPC       │
+                  │  5 tools over stdio JSON-RPC       │
                   │  validators.ts + interactions log  │
                   └─────────────────┬──────────────────┘
                                     │
@@ -245,8 +245,8 @@ and personalization have data to train on. Local-only, your data.
 
 ## Security model
 
-See `.notes/security.md` (private) for the full threat model. Active
-defences in code:
+See [SECURITY.md](../SECURITY.md) for the user-facing policy + how to
+report a vulnerability. Active defences in code:
 
 - `validateRootPath` refuses `/`, `/etc`, `/var`, `~`, `/Users`,
   `/home`, Windows system paths, and macOS-resolved aliases like

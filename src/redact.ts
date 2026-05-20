@@ -1,5 +1,5 @@
 /**
- * Secret-pattern redaction (T3 from .notes/security.md).
+ * Secret-pattern redaction for symbol signatures before they're stored.
  *
  * Code occasionally contains literal secrets — `const API_KEY = "sk-..."`,
  * embedded JWTs, AWS access keys, GitHub tokens. When we extract a symbol's

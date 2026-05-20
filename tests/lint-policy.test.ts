@@ -54,7 +54,7 @@ describe('T12 — banned network imports in src/', () => {
       expect(result.errorCount).toBeGreaterThanOrEqual(1);
       const restricted = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
       expect(restricted).toBeDefined();
-      expect(restricted!.message).toContain('No network in src/');
+      expect(restricted!.message).toContain('No network code in src/');
     });
   }
 });

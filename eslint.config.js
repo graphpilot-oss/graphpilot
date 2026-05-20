@@ -1,8 +1,9 @@
 // ESLint flat config (ESLint v9+).
 //
 // Primary purpose: enforce the "local-first, no network" promise at the
-// build gate. T12 from .notes/security.md — until this rule was added the
-// promise was a convention, not an enforced contract.
+// build gate. Until this rule was added the promise was a convention,
+// not an enforced contract — see SECURITY.md for the user-facing
+// guarantee this protects.
 //
 // Secondary purpose: catch the small set of rules where tsc isn't enough
 // (no unused variables, no console.log left in production code).
@@ -10,32 +11,43 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
+const NETWORK_MSG =
+  'No network code in src/. GraphPilot is local-first; runtime must not ' +
+  'open sockets. If you genuinely need an outbound call, it belongs in ' +
+  'a separate opt-in path — open an issue first.';
+
+const SHELL_MSG =
+  'No child_process in src/. Shelling out from runtime code creates ' +
+  'injection surface against user-supplied symbol names / paths. Tests ' +
+  'and scripts (subprocess MCP test, bench harness) are exempt — those ' +
+  'live under tests/ and scripts/.';
+
 /**
  * Modules banned from `src/`. The product promise is that nothing leaves
  * the user's machine — that's only true if there's no networking code
  * anywhere in the runtime path.
  */
 const BANNED_NETWORK_IMPORTS = [
-  { name: 'http', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'https', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'node:http', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'node:https', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'undici', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'axios', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'node-fetch', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'cross-fetch', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'got', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'request', message: 'No network in src/. See .notes/security.md T12.' },
-  { name: 'superagent', message: 'No network in src/. See .notes/security.md T12.' },
+  { name: 'http', message: NETWORK_MSG },
+  { name: 'https', message: NETWORK_MSG },
+  { name: 'node:http', message: NETWORK_MSG },
+  { name: 'node:https', message: NETWORK_MSG },
+  { name: 'undici', message: NETWORK_MSG },
+  { name: 'axios', message: NETWORK_MSG },
+  { name: 'node-fetch', message: NETWORK_MSG },
+  { name: 'cross-fetch', message: NETWORK_MSG },
+  { name: 'got', message: NETWORK_MSG },
+  { name: 'request', message: NETWORK_MSG },
+  { name: 'superagent', message: NETWORK_MSG },
 ];
 
 /**
  * Modules where shelling out to a child process would create injection
- * surface. T6 mitigation, enforced at the build gate.
+ * surface; enforced at the build gate.
  */
 const BANNED_SHELL_IMPORTS = [
-  { name: 'child_process', message: 'No child_process in src/. See .notes/security.md T6.' },
-  { name: 'node:child_process', message: 'No child_process in src/. See .notes/security.md T6.' },
+  { name: 'child_process', message: SHELL_MSG },
+  { name: 'node:child_process', message: SHELL_MSG },
 ];
 
 export default [
