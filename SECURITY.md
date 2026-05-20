@@ -4,8 +4,7 @@
 
 If you discover a security issue, **please do not open a public GitHub issue.**
 
-Email: `akshay.sharma@bloom.social`
-(this will be replaced with `security@<project-domain>` once a domain is set up)
+Email: `codewithakki@gmail.com`
 
 Include:
 
