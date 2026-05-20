@@ -1,0 +1,73 @@
+# lefthook — git hooks for GraphPilot
+#
+# Why:
+#   - Catch lint / type errors BEFORE they land in main.
+#   - Enforce Conventional Commits so the changelog stays clean and
+#     release automation can parse history (when we add release-please
+#     later).
+#   - Cheap to bypass intentionally (LEFTHOOK=0 git commit) but the
+#     default makes the right thing the easy thing.
+#
+# Install path:
+#   `pnpm install` runs lefthook's postinstall hook which wires this
+#   file into .git/hooks/. No manual `lefthook install` step required.
+#
+# Bypass:
+#   LEFTHOOK=0 git commit              # skip all hooks
+#   LEFTHOOK_EXCLUDE=lint git commit   # skip the lint job only
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: typecheck
+      run: pnpm typecheck
+      glob:
+        - "src/**/*.ts"
+        - "tests/**/*.ts"
+        - "bench/**/*.ts"
+
+    - name: lint
+      # Only lint files actually staged — fast, accurate.
+      run: pnpm exec eslint {staged_files}
+      glob:
+        - "src/**/*.ts"
+        - "tests/**/*.ts"
+        - "scripts/**/*.{ts,mjs}"
+
+commit-msg:
+  jobs:
+    - name: conventional-commits
+      # Conventional Commits regex. Allows:
+      #   feat: ...      feat(scope): ...
+      #   fix: ...       fix(scope)!: ...      (! marks breaking change)
+      #   chore: ...     docs: ...     refactor: ...     test: ...
+      #   perf: ...      build: ...    ci: ...           revert: ...
+      # Plus the standard merge-commit / fixup / WIP forms.
+      run: |
+        first=$(head -1 "{1}")
+        if echo "$first" | grep -qE '^(Merge |Revert |fixup!|squash!|amend!)'; then
+          exit 0
+        fi
+        if echo "$first" | grep -qE '^(feat|fix|chore|docs|test|refactor|perf|build|ci|revert)(\([^)]+\))?!?: .+'; then
+          exit 0
+        fi
+        echo ""
+        echo "❌ Commit message does not follow Conventional Commits."
+        echo ""
+        echo "   Got: $first"
+        echo ""
+        echo "   Format: <type>(<scope>)?: <subject>"
+        echo "   Types : feat, fix, chore, docs, test, refactor, perf, build, ci, revert"
+        echo ""
+        echo "   Examples:"
+        echo "     feat(mcp): add gp_impact tool"
+        echo "     fix: handle empty TS files gracefully"
+        echo "     docs(quickstart): clarify Claude Code setup"
+        echo ""
+        echo "   To bypass once:  LEFTHOOK=0 git commit ..."
+        exit 1
+
+pre-push:
+  jobs:
+    - name: test
+      run: pnpm test

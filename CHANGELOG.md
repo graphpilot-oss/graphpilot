@@ -49,6 +49,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   7 wins / 2 ties / 1 expected loss** (the string-literal task,
   deliberately included as the honest "grep wins" case). Spec for the
   agent-eval Tier B is in `bench/run-agent-tier.md`.
+- Contributor Covenant 2.1 code of conduct (closes GitHub Community
+  Standards check). Reporting email is `codewithakki@gmail.com`;
+
+### Dev workflow
+
+- Pre-commit hooks via `lefthook` (added 2026-05-20):
+  - `pre-commit`: `pnpm typecheck` + ESLint on staged source files
+    (parallel). Hits sub-second on small changes.
+  - `commit-msg`: Conventional Commits regex enforcement. Bad messages
+    get a friendly error pointing at the format spec. Allows
+    `Merge`/`Revert`/`fixup!`/`squash!` for ergonomics.
+  - `pre-push`: full `pnpm test`. Stops broken builds from reaching
+    the remote.
+  - Bypass for emergencies: `LEFTHOOK=0 git commit` or
+    `LEFTHOOK_EXCLUDE=<jobname> git commit`. Installed automatically by
+    `pnpm install`; no manual `lefthook install` required.
 - Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
   fields, type errors, out-of-range numbers, oversize strings.
 - Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool
