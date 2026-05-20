@@ -32,6 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     paths), and a public-API flag derived from `exported`. Answers "what
     breaks if I rename X?" in a single tool call. Pure-function core in
     `src/impact.ts`; cycle-safe; per-level cap with `truncated` flag.
+- Watch mode: `graphpilot watch <path>` keeps the index fresh as you
+  edit. Uses `chokidar` (fsevents/inotify/RDCW) with editor-save
+  debouncing. Each file save triggers an incremental update — re-parse
+  one file, drop its old contribution, re-resolve edges across the
+  whole symbol table, save atomically. Real-world 3–5 ms per save on
+  small repos. Updates serialize through an internal chain so chokidar
+  bursts can't race into a torn graph. Storage writes are atomic
+  (`.tmp` + rename) so a crash never leaves a half-written graph.json.
+  CLI runs until SIGINT.
 - Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
   fields, type errors, out-of-range numbers, oversize strings.
 - Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool

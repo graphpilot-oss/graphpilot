@@ -133,7 +133,25 @@ Code. Pick real symbol names from your indexed repo:
 Watch the response for a `Calling graphpilot/gp_*` line — that's the
 tool firing. If you see it, you're done.
 
-## 6. Make Claude reach for GraphPilot automatically
+## 6. Keep the index fresh while you edit (optional)
+
+By default the index is a snapshot — it grows stale as you edit. Either
+re-run `graphpilot index .` after big changes, or just leave watch mode
+running in a side terminal:
+
+```bash
+node dist/cli.js watch /path/to/your/repo
+# [graphpilot:watch] Watching ... (412 symbols, 1138 calls, 87 files).
+# [graphpilot:watch] src/auth.ts: 32 (+1) symbols, 89 (+3) calls (4ms).
+# [graphpilot:watch] src/auth.ts deleted: 30 (-2) symbols, 84 (-5) calls (3ms).
+# Ctrl+C to stop.
+```
+
+Each save triggers a sub-10ms incremental update. The on-disk
+`graph.json` is rewritten atomically — Claude always sees a consistent
+view, even mid-edit.
+
+## 7. Make Claude reach for GraphPilot automatically
 
 You shouldn't have to type "use graphpilot to..." every time. Add a
 `CLAUDE.md` to the root of the indexed repo:
@@ -157,6 +175,13 @@ questions.
 
 Restart Claude Code one more time. From here, structural questions route
 to GraphPilot automatically.
+
+When `gp_impact` is part of the routing, add this line so it's used too:
+
+```
+- "rename X — what breaks" / "impact of changing X" / "what depends on X"
+  → use gp_impact (returns direct + transitive callers + tests + public-API flag)
+```
 
 ## What to do next
 

@@ -276,9 +276,9 @@ catches the "server starts but never responds" regression class.
 
 | Feature | Where it would live | Effort |
 |---|---|---|
-| Watch mode | new `src/watcher.ts` + indexer hook | small |
-| `.graphpilotignore` | extend `DEFAULT_IGNORE` in indexer | small |
-| `gp_impact` tool | new handler in `mcp.ts` over existing query layer | small |
+| ~~Watch mode~~ | Shipped: `src/watcher.ts` + `graphpilot watch` CLI | — |
+| ~~`gp_impact` tool~~ | Shipped: `src/impact.ts` + handler in `mcp.ts` | — |
+| `.graphpilotignore` | extend `DEFAULT_IGNORE` in indexer + watcher | small |
 | Cross-repo workspace | new `src/workspace.ts` + workspace yaml loader | medium |
 | Semantic search | embedding pipeline + vector index | medium |
 | Stack-Graphs resolver | replace `resolveCallEdges` algorithm | large |

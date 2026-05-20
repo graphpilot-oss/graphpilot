@@ -47,14 +47,15 @@ trade-offs:
 
 ## Indexing model
 
-- **No watch mode.** Code changes require re-running
-  `graphpilot index` (or `gp_index` from the agent).
-- **No incremental updates.** Re-index is a full re-walk (~1s for 800
-  files, ~10s for 10k).
+- **Watch mode is per-file incremental.** `graphpilot watch` re-parses
+  only the file that changed and re-resolves edges across the symbol
+  table in ~3–10ms per save. Full re-index is only needed on first run
+  or after a `pnpm install` / branch switch that changes many files.
 - **Single-process.** No CPU parallelism in v0.1.
 - **No `.graphpilotignore`.** Defaults skip `node_modules`, `dist`,
-  `build`, `.git`, `coverage`, `.next`, `.nuxt`, `.cache`, `out`. To
-  customize, hand-edit `src/indexer.ts`.
+  `build`, `.git`, `coverage`, `.next`, `.nuxt`, `.cache`, `out`,
+  `*.d.ts`. To customize, hand-edit `src/indexer.ts` (and
+  `src/watcher.ts` for watch mode).
 - **Max 50,000 files per index** (`MAX_FILES_PER_INDEX`). Larger repos
   error out — narrow the path or wait for v0.4 workspaces.
 - **Max 5 MB per file** (`MAX_FILE_BYTES`). Larger files (minified

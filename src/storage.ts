@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync, renameSync } from 'node:fs';
 import type { SymbolRecord } from './symbols.js';
 import type { CallEdge } from './edges.js';
 import { validateGraph } from './graph-schema.js';
@@ -43,8 +43,18 @@ export function saveGraph(graph: Graph): string {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   if (!isWindows) chmodSync(dir, 0o700);
   const path = graphPath(graph.rootPath);
-  writeFileSync(path, JSON.stringify(graph, null, 2), { encoding: 'utf8', mode: 0o600 });
-  if (!isWindows) chmodSync(path, 0o600);
+
+  // Atomic write — write to a sibling .tmp file and rename. Crash-safe:
+  // a partial write never produces a corrupt graph.json that would later
+  // fail T4's schema validator and force a full re-index. Defends watch
+  // mode (which writes many times) against ungraceful shutdowns.
+  const tmpPath = path + '.tmp';
+  writeFileSync(tmpPath, JSON.stringify(graph, null, 2), {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+  if (!isWindows) chmodSync(tmpPath, 0o600);
+  renameSync(tmpPath, path);
   return path;
 }
 
