@@ -1,0 +1,810 @@
+{
+  "meta": {
+    "corpus": "<graphpilot-repo>",
+    "timestamp": "2026-05-20T06:13:00.314Z",
+    "graphpilotVersion": "0.0.1",
+    "nodeVersion": "v23.11.0",
+    "platform": "darwin"
+  },
+  "aggregate": {
+    "totalTasks": 10,
+    "graphpilotF1Sum": 8.923076923076923,
+    "baselineF1Sum": 4.166666666666667,
+    "graphpilotBytesTotal": 721,
+    "baselineBytesTotal": 540799,
+    "graphpilotWins": 7,
+    "baselineWins": 1,
+    "ties": 2,
+    "expectedWinnerHits": 9
+  },
+  "perTask": [
+    {
+      "task": {
+        "id": "t01-callers-analyzeImpact",
+        "description": "Find every function that calls analyzeImpact",
+        "prompt": "In this repo, what functions call analyzeImpact?",
+        "kind": "callers",
+        "query": "analyzeImpact",
+        "groundTruth": [
+          "handleGpImpact"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "low"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "handleGpImpact"
+          ],
+          "outputBytes": 18,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 1,
+          "truePositives": [
+            "handleGpImpact"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "that"
+          ],
+          "outputBytes": 49951,
+          "durationMs": 1
+        },
+        "score": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [
+            "that"
+          ],
+          "falseNegatives": [
+            "handleGpImpact"
+          ]
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t02-callers-extractSymbols",
+        "description": "Find every direct caller of extractSymbols",
+        "prompt": "Who calls extractSymbols in this codebase?",
+        "kind": "callers",
+        "query": "extractSymbols",
+        "groundTruth": [
+          "indexDirectory",
+          "applyUpdate",
+          "symbolsOf"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "low"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "applyUpdate",
+            "indexDirectory",
+            "symbolsOf"
+          ],
+          "outputBytes": 44,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 3,
+          "truePositives": [
+            "applyUpdate",
+            "indexDirectory",
+            "symbolsOf"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [],
+          "outputBytes": 44668,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": [
+            "applyUpdate",
+            "indexDirectory",
+            "symbolsOf"
+          ]
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t03-callers-validateRootPath",
+        "description": "Find every direct caller of validateRootPath",
+        "prompt": "Where is validateRootPath used in the codebase? List every callsite.",
+        "kind": "callers",
+        "query": "validateRootPath",
+        "groundTruth": [
+          "cmdIndex",
+          "main",
+          "handleGpIndex",
+          "constructor"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "medium"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "cmdIndex",
+            "constructor",
+            "handleGpIndex",
+            "main"
+          ],
+          "outputBytes": 49,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 4,
+          "truePositives": [
+            "cmdIndex",
+            "constructor",
+            "handleGpIndex",
+            "main"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [],
+          "outputBytes": 49680,
+          "durationMs": 1
+        },
+        "score": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": [
+            "cmdIndex",
+            "constructor",
+            "handleGpIndex",
+            "main"
+          ]
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t04-recall-substring-parse",
+        "description": "Find every symbol whose name contains \"parse\"",
+        "prompt": "List every function, class, or interface whose name contains \"parse\".",
+        "kind": "recall-substring",
+        "query": "parse",
+        "groundTruth": [
+          "ParsedFile",
+          "getParser",
+          "parseFile",
+          "parseSource",
+          "parseToken"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "low"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "ParsedFile",
+            "getParser",
+            "parseFile",
+            "parseSource",
+            "parseToken"
+          ],
+          "outputBytes": 65,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 5,
+          "truePositives": [
+            "ParsedFile",
+            "getParser",
+            "parseFile",
+            "parseSource",
+            "parseToken"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "extractSymbols",
+            "listFunctions",
+            "name",
+            "parseFile",
+            "parseSource",
+            "parseToken",
+            "whose"
+          ],
+          "outputBytes": 151672,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0.42857142857142855,
+          "recall": 0.6,
+          "f1": 0.5,
+          "intersectionSize": 3,
+          "truePositives": [
+            "parseFile",
+            "parseSource",
+            "parseToken"
+          ],
+          "falsePositives": [
+            "extractSymbols",
+            "listFunctions",
+            "name",
+            "whose"
+          ],
+          "falseNegatives": [
+            "ParsedFile",
+            "getParser"
+          ]
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t05-kind-filter-interfaces",
+        "description": "Enumerate all TypeScript interfaces under src/",
+        "prompt": "List every TypeScript interface defined under src/.",
+        "kind": "kind-filter",
+        "query": "interface",
+        "groundTruth": [
+          "CallEdge",
+          "EdgeQueryOptions",
+          "Graph",
+          "GpCallersArgs",
+          "GpImpactArgs",
+          "GpIndexArgs",
+          "GpRecallArgs",
+          "GpStatsArgs",
+          "ImpactCaller",
+          "ImpactOptions",
+          "ImpactResult",
+          "IndexOptions",
+          "IndexResult",
+          "InteractionEntry",
+          "ParsedFile",
+          "RawCall",
+          "RecallOptions",
+          "SecretPattern",
+          "SymbolRecord",
+          "ToolResult",
+          "UpdateResult",
+          "ValidationContext",
+          "WatcherOptions"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "medium"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "CallEdge",
+            "EdgeQueryOptions",
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs",
+            "Graph",
+            "ImpactCaller",
+            "ImpactOptions",
+            "ImpactResult",
+            "IndexOptions",
+            "IndexResult",
+            "InteractionEntry",
+            "ParsedFile",
+            "RawCall",
+            "RecallOptions",
+            "SecretPattern",
+            "SymbolRecord",
+            "ToolResult",
+            "UpdateResult",
+            "ValidationContext",
+            "WatcherOptions"
+          ],
+          "outputBytes": 342,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 23,
+          "truePositives": [
+            "CallEdge",
+            "EdgeQueryOptions",
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs",
+            "Graph",
+            "ImpactCaller",
+            "ImpactOptions",
+            "ImpactResult",
+            "IndexOptions",
+            "IndexResult",
+            "InteractionEntry",
+            "ParsedFile",
+            "RawCall",
+            "RecallOptions",
+            "SecretPattern",
+            "SymbolRecord",
+            "ToolResult",
+            "UpdateResult",
+            "ValidationContext",
+            "WatcherOptions"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "CallEdge",
+            "EdgeQueryOptions",
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs",
+            "Graph",
+            "ImpactCaller",
+            "ImpactOptions",
+            "ImpactResult",
+            "IndexOptions",
+            "IndexResult",
+            "InteractionEntry",
+            "ParsedFile",
+            "RawCall",
+            "RecallOptions",
+            "SecretPattern",
+            "SymbolRecord",
+            "ToolResult",
+            "UpdateResult",
+            "ValidationContext",
+            "WatcherOptions"
+          ],
+          "outputBytes": 91063,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 23,
+          "truePositives": [
+            "CallEdge",
+            "EdgeQueryOptions",
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs",
+            "Graph",
+            "ImpactCaller",
+            "ImpactOptions",
+            "ImpactResult",
+            "IndexOptions",
+            "IndexResult",
+            "InteractionEntry",
+            "ParsedFile",
+            "RawCall",
+            "RecallOptions",
+            "SecretPattern",
+            "SymbolRecord",
+            "ToolResult",
+            "UpdateResult",
+            "ValidationContext",
+            "WatcherOptions"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "winner": "tie",
+      "expectedMatch": false
+    },
+    {
+      "task": {
+        "id": "t06-impact-extractSymbols-depth2",
+        "description": "Compute blast radius of changing extractSymbols (depth 2)",
+        "prompt": "If I change extractSymbols's signature, what functions will I need to update? Include indirect callers up to two hops.",
+        "kind": "impact",
+        "query": "extractSymbols",
+        "groundTruth": [
+          "indexDirectory",
+          "applyUpdate",
+          "symbolsOf",
+          "cmdIndex",
+          "handleGpIndex",
+          "handleEvent"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "high"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "applyUpdate",
+            "cmdIndex",
+            "fullReindex",
+            "handleEvent",
+            "handleGpIndex",
+            "indexDirectory",
+            "symbolsOf"
+          ],
+          "outputBytes": 99,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0.8571428571428571,
+          "recall": 1,
+          "f1": 0.923076923076923,
+          "intersectionSize": 6,
+          "truePositives": [
+            "applyUpdate",
+            "cmdIndex",
+            "handleEvent",
+            "handleGpIndex",
+            "indexDirectory",
+            "symbolsOf"
+          ],
+          "falsePositives": [
+            "fullReindex"
+          ],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [],
+          "outputBytes": 44668,
+          "durationMs": 1
+        },
+        "score": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": [
+            "applyUpdate",
+            "cmdIndex",
+            "handleEvent",
+            "handleGpIndex",
+            "indexDirectory",
+            "symbolsOf"
+          ]
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t07-tests-affected-parseFile",
+        "description": "Identify test files that exercise parseFile (directly)",
+        "prompt": "If I change the behavior of parseFile, which test files are most likely to break?",
+        "kind": "tests-affected",
+        "query": "parseFile",
+        "groundTruth": [
+          "tests/symbols.test.ts"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "medium"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "tests/symbols.test.ts"
+          ],
+          "outputBytes": 25,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 1,
+          "truePositives": [
+            "tests/symbols.test.ts"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "tests/edges.test.ts",
+            "tests/parser.test.ts",
+            "tests/redact.test.ts",
+            "tests/security.test.ts",
+            "tests/symbols.test.ts"
+          ],
+          "outputBytes": 49953,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0.2,
+          "recall": 1,
+          "f1": 0.33333333333333337,
+          "intersectionSize": 1,
+          "truePositives": [
+            "tests/symbols.test.ts"
+          ],
+          "falsePositives": [
+            "tests/edges.test.ts",
+            "tests/parser.test.ts",
+            "tests/redact.test.ts",
+            "tests/security.test.ts"
+          ],
+          "falseNegatives": []
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t08-recall-substring-args",
+        "description": "Find every MCP-tool input-args interface",
+        "prompt": "List every TypeScript type whose name ends with \"Args\".",
+        "kind": "recall-substring",
+        "query": "Args",
+        "groundTruth": [
+          "GpCallersArgs",
+          "GpImpactArgs",
+          "GpIndexArgs",
+          "GpRecallArgs",
+          "GpStatsArgs"
+        ],
+        "expectedWinner": "graphpilot",
+        "difficulty": "low"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs"
+          ],
+          "outputBytes": 75,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 5,
+          "truePositives": [
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs"
+          ],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs",
+            "handleGpCallers",
+            "handleGpImpact",
+            "handleGpIndex",
+            "handleGpRecall",
+            "handleGpStats",
+            "rawArgs",
+            "validateGpCallers",
+            "validateGpImpact",
+            "validateGpIndex",
+            "validateGpRecall",
+            "validateGpStats"
+          ],
+          "outputBytes": 34102,
+          "durationMs": 1
+        },
+        "score": {
+          "precision": 0.3125,
+          "recall": 1,
+          "f1": 0.47619047619047616,
+          "intersectionSize": 5,
+          "truePositives": [
+            "GpCallersArgs",
+            "GpImpactArgs",
+            "GpIndexArgs",
+            "GpRecallArgs",
+            "GpStatsArgs"
+          ],
+          "falsePositives": [
+            "handleGpCallers",
+            "handleGpImpact",
+            "handleGpIndex",
+            "handleGpRecall",
+            "handleGpStats",
+            "rawArgs",
+            "validateGpCallers",
+            "validateGpImpact",
+            "validateGpIndex",
+            "validateGpRecall",
+            "validateGpStats"
+          ],
+          "falseNegatives": []
+        }
+      },
+      "winner": "graphpilot",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t09-recall-miss",
+        "description": "Look up a symbol that does not exist (negative test)",
+        "prompt": "Find the function definitelyNotARealSymbol in this codebase.",
+        "kind": "recall-miss",
+        "query": "definitelyNotARealSymbol",
+        "groundTruth": [],
+        "expectedWinner": "tie",
+        "difficulty": "low"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [],
+          "outputBytes": 2,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [],
+          "outputBytes": 7092,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": []
+        }
+      },
+      "winner": "tie",
+      "expectedMatch": true
+    },
+    {
+      "task": {
+        "id": "t10-string-literal-MAX_FILE_BYTES",
+        "description": "Find every literal occurrence of the constant name \"MAX_FILE_BYTES\"",
+        "prompt": "Find every place the string \"MAX_FILE_BYTES\" appears in the source.",
+        "kind": "string-literal",
+        "query": "MAX_FILE_BYTES",
+        "groundTruth": [
+          "src/validation.ts",
+          "src/parser.ts",
+          "tests/security.test.ts"
+        ],
+        "expectedWinner": "grep",
+        "difficulty": "medium"
+      },
+      "graphpilot": {
+        "run": {
+          "returned": [],
+          "outputBytes": 2,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0,
+          "recall": 0,
+          "f1": 0,
+          "intersectionSize": 0,
+          "truePositives": [],
+          "falsePositives": [],
+          "falseNegatives": [
+            "src/parser.ts",
+            "src/validation.ts",
+            "tests/security.test.ts"
+          ]
+        }
+      },
+      "baseline": {
+        "run": {
+          "returned": [
+            "bench/tasks.ts",
+            "src/parser.ts",
+            "src/validation.ts",
+            "tests/security.test.ts"
+          ],
+          "outputBytes": 17950,
+          "durationMs": 0
+        },
+        "score": {
+          "precision": 0.75,
+          "recall": 1,
+          "f1": 0.8571428571428571,
+          "intersectionSize": 3,
+          "truePositives": [
+            "src/parser.ts",
+            "src/validation.ts",
+            "tests/security.test.ts"
+          ],
+          "falsePositives": [
+            "bench/tasks.ts"
+          ],
+          "falseNegatives": []
+        }
+      },
+      "winner": "grep",
+      "expectedMatch": true
+    }
+  ]
+}

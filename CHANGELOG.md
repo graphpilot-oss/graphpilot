@@ -41,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bursts can't race into a torn graph. Storage writes are atomic
   (`.tmp` + rename) so a crash never leaves a half-written graph.json.
   CLI runs until SIGINT.
+- Reproducible benchmark (Tier A): `pnpm bench` runs 10 hand-curated
+  structural tasks against GraphPilot's own codebase (the corpus) and
+  scores precision/recall/F1 + bytes processed vs a grep-simulator
+  baseline. Anyone with `pnpm install` can reproduce. First run:
+  **F1 0.89 vs grep 0.42, 99.9 % byte reduction (721 B vs 528 KB),
+  7 wins / 2 ties / 1 expected loss** (the string-literal task,
+  deliberately included as the honest "grep wins" case). Spec for the
+  agent-eval Tier B is in `bench/run-agent-tier.md`.
 - Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
   fields, type errors, out-of-range numbers, oversize strings.
 - Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool

@@ -10,6 +10,13 @@
 
 ---
 
+**On 10 standardized structural questions** about a real TypeScript codebase:
+GraphPilot returns the correct answer with **F1 0.89** vs grep's **0.42**, while
+the agent reads **99.9 % fewer bytes** (721 B vs 528 KB) to reach the same
+conclusion. [Reproduce in 30 s →](bench/README.md)
+
+---
+
 ## Status
 
 Pre-alpha, in active development. Not yet published to npm. Expect breaking changes.
@@ -27,42 +34,74 @@ node dist/cli.js index /path/to/your/repo
 
 # See what got indexed
 node dist/cli.js status /path/to/your/repo
+
+# Keep the index fresh as you edit (Ctrl+C to stop)
+node dist/cli.js watch /path/to/your/repo
 ```
+
+Then wire it into Claude Code (or any MCP client): see
+[docs/mcp-setup.md](docs/mcp-setup.md).
 
 ## What it does
 
-Three tools the coding agent can call over MCP (once the server lands):
+Five MCP tools that any MCP-compatible agent (Claude Code, Cursor, Cline,
+Windsurf, Continue) can call:
 
-- `gp_index` — index a TypeScript/JavaScript repo into local memory
-- `gp_recall` — look up a function, class, type, or interface by name
-- `gp_callers` — find what calls a symbol (or what a symbol calls)
+| Tool | Use it for |
+|---|---|
+| `gp_index` | Re-index a repo from inside the agent |
+| `gp_recall` | Look up a function/class/type/interface by name |
+| `gp_callers` | List callers (or callees) of a symbol |
+| `gp_impact` | Blast radius: direct + transitive callers, tests affected, public-API flag — answers *"what breaks if I rename X?"* in one call |
+| `gp_stats` | Index health probe |
 
-The index lives in `~/.graphpilot/<repo-id>/graph.json`. Everything stays local.
+Plus `graphpilot watch` for sub-second incremental updates on file save.
+
+The index lives in `~/.graphpilot/<repo-id>/graph.json` (mode 0600). Everything
+stays local. No accounts, no telemetry, no remote calls — enforced by an
+ESLint policy on the codebase itself.
 
 ## Roadmap
 
 | Milestone | Status |
 |---|---|
-| Parser + symbol extraction (TS/JS) | ✅ Done |
-| Directory indexer + JSON storage | ✅ Done |
-| Call-edge extraction | 🚧 In progress |
-| MCP server (`gp_index`, `gp_recall`, `gp_callers`) | ⏭ Next |
-| Outcome benchmark vs baseline Claude Code | ⏭ |
+| Parser + symbol extraction (TS/JS) | ✅ |
+| Directory indexer + JSON storage | ✅ |
+| Call-edge extraction + resolver | ✅ |
+| MCP server (5 tools) | ✅ |
+| Watch mode | ✅ |
+| Impact analysis (`gp_impact`) | ✅ |
+| Tier-A benchmark (this codebase) | ✅ |
+| Tier-B agent benchmark (Claude Code vs baseline) | ⏭ |
 | npm publish | ⏭ |
-| Python language support | ⏭ |
+| Python language support | ⏭ (demand-gated) |
 
 ## Why
 
-Most coding agents (Claude Code, Cursor, Aider) re-grep the codebase every conversation.
-That burns tokens, hallucinates function names, and misses structural relationships
-("what calls this?", "what breaks if I rename it?").
+Most coding agents (Claude Code, Cursor, Aider) re-grep the codebase every
+conversation. That burns tokens, hallucinates function names, and misses
+structural relationships (*"what calls this?"*, *"what breaks if I rename it?"*).
 
-GraphPilot indexes the structural memory of your repo once. The agent reuses it across
-sessions. Token cost drops. Hallucinations drop. Refactors get safer.
+GraphPilot indexes the structural memory of your repo once. The agent reuses
+it across sessions. Token cost drops. Hallucinations drop. Refactors get safer.
+
+The benchmark above is the floor: it measures what's reachable via tool calls,
+not what the agent does with it. The agent-eval Tier B is spec'd in
+[bench/run-agent-tier.md](bench/run-agent-tier.md) and pending a focused
+launch-prep session.
+
+## Documentation
+
+- [docs/quickstart.md](docs/quickstart.md) — 5-minute walkthrough
+- [docs/mcp-setup.md](docs/mcp-setup.md) — per-client config
+- [docs/architecture.md](docs/architecture.md) — how the pipeline works
+- [docs/limitations.md](docs/limitations.md) — v1 caveats (read this)
+- [bench/README.md](bench/README.md) — benchmark methodology + results
 
 ## Contributing
 
-We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) before
+opening a PR.
 
 ## License
 

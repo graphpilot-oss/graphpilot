@@ -42,3 +42,7 @@ pnpm-debug.log*
 *.sqlite
 *.sqlite3
 CLAUDE.md
+
+# Per-run benchmark output (committed baseline.json is the reference)
+bench/results/bench-*.json
+bench/results/bench-*.md
