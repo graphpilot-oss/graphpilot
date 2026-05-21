@@ -27,6 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "chokidar": "^5.0.0",
     "fast-glob": "^3.3.2",
+    "isomorphic-git": "^1.38.1",
     "tree-sitter": "^0.22.4",
     "tree-sitter-typescript": "^0.23.2"
   },

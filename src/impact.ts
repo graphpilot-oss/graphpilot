@@ -74,6 +74,17 @@ export interface ImpactOptions {
   depth?: number;
   /** Max callers reported per depth level. Default 100. Cap on output, not search. */
   perLevelLimit?: number;
+  /**
+   * Differential mode: if provided, the returned callers (direct +
+   * transitive) are filtered to only those whose source file is in this
+   * set. The BFS itself still walks the full graph — filtering is applied
+   * after, so transitive chains aren't broken by an intermediate hop that
+   * lives in an unchanged file.
+   *
+   * Used by `gp_impact({since: <commit>})` to answer "which of the
+   * callers of X are in code that *actually changed* since <commit>?"
+   */
+  changedFiles?: Set<string> | null;
 }
 
 const MAX_DEPTH = 5;
@@ -165,7 +176,12 @@ export function analyzeImpact(
   const depth = Math.min(Math.max(opts.depth ?? DEFAULT_DEPTH, 1), MAX_DEPTH);
   const perLevelLimit = opts.perLevelLimit ?? DEFAULT_PER_LEVEL_LIMIT;
 
-  const { callers, truncated } = bfsCallers(idx, target.id, depth, perLevelLimit);
+  const { callers: allCallers, truncated } = bfsCallers(idx, target.id, depth, perLevelLimit);
+
+  const changedFiles = opts.changedFiles ?? null;
+  const callers = changedFiles
+    ? allCallers.filter((c) => changedFiles.has(c.symbol.file))
+    : allCallers;
 
   const directCallers: ImpactCaller[] = [];
   const transitiveCallers: ImpactCaller[] = [];

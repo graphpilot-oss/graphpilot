@@ -177,4 +177,17 @@ describe('validateGpImpact', () => {
     expect(validateGpImpact({ symbol: 42 }).ok).toBe(false);
     expect(validateGpImpact({ symbol: 'x', depth: '3' }).ok).toBe(false);
   });
+
+  it('accepts a non-empty `since` (commit/branch/tag)', () => {
+    const r = validateGpImpact({ symbol: 'x', since: 'main' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.since).toBe('main');
+    expect(validateGpImpact({ symbol: 'x', since: 'abc1234' }).ok).toBe(true);
+  });
+
+  it('rejects empty / whitespace / wrong-typed `since`', () => {
+    expect(validateGpImpact({ symbol: 'x', since: '' }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', since: '   ' }).ok).toBe(false);
+    expect(validateGpImpact({ symbol: 'x', since: 42 }).ok).toBe(false);
+  });
 });

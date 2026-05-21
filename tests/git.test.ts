@@ -2,7 +2,15 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { getWorktreeRoot, getRepoSha, getRepoBranch, shortSha, readGitInfo } from '../src/git.js';
+import {
+  getWorktreeRoot,
+  getRepoSha,
+  getRepoBranch,
+  shortSha,
+  readGitInfo,
+  getChangedFiles,
+  resolveIndexRoot,
+} from '../src/git.js';
 
 /**
  * Tests for the minimal git helpers. We build fake .git/ trees by
@@ -189,5 +197,107 @@ describe('readGitInfo', () => {
     expect(info.sha).toBe(FAKE_SHA);
     expect(info.shortSha).toBe(FAKE_SHA.slice(0, 7));
     expect(info.branch).toBe('main');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getChangedFiles — real isomorphic-git roundtrip on a temp repo
+// ---------------------------------------------------------------------------
+
+describe('getChangedFiles', () => {
+  it('returns null outside a git repo', async () => {
+    const result = await getChangedFiles(workDir, 'main');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the ref does not resolve', async () => {
+    // Build a real git repo so getWorktreeRoot succeeds, then ask about
+    // a ref that doesn't exist. isomorphic-git's resolveRef + expandOid
+    // both fail, so the function should swallow and return null.
+    const git = (await import('isomorphic-git')).default;
+    const fs = await import('node:fs');
+    await git.init({ fs, dir: workDir });
+    writeFileSync(join(workDir, 'a.ts'), 'export const x = 1;\n');
+    await git.add({ fs, dir: workDir, filepath: 'a.ts' });
+    await git.commit({
+      fs,
+      dir: workDir,
+      message: 'init',
+      author: { name: 't', email: 't@t.t' },
+    });
+    const result = await getChangedFiles(workDir, 'definitely-not-a-real-ref');
+    expect(result).toBeNull();
+  });
+
+  it('reports added/modified files between two commits', async () => {
+    const git = (await import('isomorphic-git')).default;
+    const fs = await import('node:fs');
+    await git.init({ fs, dir: workDir });
+
+    writeFileSync(join(workDir, 'a.ts'), 'export const a = 1;\n');
+    writeFileSync(join(workDir, 'b.ts'), 'export const b = 1;\n');
+    await git.add({ fs, dir: workDir, filepath: 'a.ts' });
+    await git.add({ fs, dir: workDir, filepath: 'b.ts' });
+    const first = await git.commit({
+      fs,
+      dir: workDir,
+      message: 'init',
+      author: { name: 't', email: 't@t.t' },
+    });
+
+    // Modify a.ts, add c.ts, leave b.ts untouched
+    writeFileSync(join(workDir, 'a.ts'), 'export const a = 2;\n');
+    writeFileSync(join(workDir, 'c.ts'), 'export const c = 1;\n');
+    await git.add({ fs, dir: workDir, filepath: 'a.ts' });
+    await git.add({ fs, dir: workDir, filepath: 'c.ts' });
+    await git.commit({
+      fs,
+      dir: workDir,
+      message: 'change',
+      author: { name: 't', email: 't@t.t' },
+    });
+
+    const changed = await getChangedFiles(workDir, first);
+    expect(changed).not.toBeNull();
+    expect(changed!.has('a.ts')).toBe(true);
+    expect(changed!.has('c.ts')).toBe(true);
+    expect(changed!.has('b.ts')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveIndexRoot — worktree-scope auto-resolution
+// ---------------------------------------------------------------------------
+
+describe('resolveIndexRoot', () => {
+  it('returns the path unchanged outside a git repo', () => {
+    const r = resolveIndexRoot(workDir);
+    expect(r.root).toBe(workDir);
+    expect(r.redirected).toBe(false);
+  });
+
+  it('re-roots to the worktree top when called from a subdirectory', () => {
+    makeFakeGit(workDir, { head: 'ref: refs/heads/main\n' });
+    const sub = join(workDir, 'src', 'deep');
+    mkdirSync(sub, { recursive: true });
+    const r = resolveIndexRoot(sub);
+    expect(r.root).toBe(workDir);
+    expect(r.redirected).toBe(true);
+  });
+
+  it('does not re-root when already at the worktree top', () => {
+    makeFakeGit(workDir, { head: 'ref: refs/heads/main\n' });
+    const r = resolveIndexRoot(workDir);
+    expect(r.root).toBe(workDir);
+    expect(r.redirected).toBe(false);
+  });
+
+  it('honors disable: true (opt-out)', () => {
+    makeFakeGit(workDir, { head: 'ref: refs/heads/main\n' });
+    const sub = join(workDir, 'src');
+    mkdirSync(sub, { recursive: true });
+    const r = resolveIndexRoot(sub, { disable: true });
+    expect(r.root).toBe(sub);
+    expect(r.redirected).toBe(false);
   });
 });

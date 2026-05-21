@@ -18,8 +18,10 @@
  * Indexing a non-git directory is a perfectly normal use case.
  */
 
+import * as fs from 'node:fs';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
+import git from 'isomorphic-git';
 
 /**
  * Walk up the directory tree starting from `somePath` looking for a
@@ -153,6 +155,89 @@ export interface GitInfo {
   sha: string | null;
   shortSha: string | null;
   branch: string | null;
+}
+
+/**
+ * Compute the set of repo-relative file paths that have changed between
+ * `sinceRef` (commit SHA, short SHA, or branch name) and HEAD.
+ *
+ * Uses isomorphic-git's tree walker — pure JS, no shell-out (T6-safe).
+ * Returns null if:
+ *   - `somePath` isn't inside a git repo
+ *   - `sinceRef` doesn't resolve to a commit
+ *   - any unexpected error occurs (we treat diff as best-effort)
+ *
+ * "Changed" = added, modified, or deleted on either side of the diff.
+ * Paths are relative to the worktree root, forward-slashed (POSIX), so
+ * they line up with SymbolRecord.file values produced by the indexer.
+ */
+export async function getChangedFiles(
+  somePath: string,
+  sinceRef: string,
+): Promise<Set<string> | null> {
+  const root = getWorktreeRoot(somePath);
+  if (!root) return null;
+  const gitDir = getGitDir(root);
+  if (!gitDir) return null;
+
+  try {
+    const sinceOid = await git
+      .resolveRef({ fs, dir: root, gitdir: gitDir, ref: sinceRef })
+      .catch(async () =>
+        // Fall back to expandOid for short SHAs that aren't valid refs
+        git.expandOid({ fs, dir: root, gitdir: gitDir, oid: sinceRef }),
+      );
+    const headOid = await git.resolveRef({ fs, dir: root, gitdir: gitDir, ref: 'HEAD' });
+
+    const changed = new Set<string>();
+    await git.walk({
+      fs,
+      dir: root,
+      gitdir: gitDir,
+      trees: [git.TREE({ ref: sinceOid }), git.TREE({ ref: headOid })],
+      map: async (filepath, [a, b]) => {
+        if (filepath === '.') return;
+        // Skip directories (we only care about file content changes)
+        const aType = a ? await a.type() : null;
+        const bType = b ? await b.type() : null;
+        if (aType === 'tree' || bType === 'tree') return;
+
+        const aOid = a ? await a.oid() : null;
+        const bOid = b ? await b.oid() : null;
+        if (aOid !== bOid) {
+          changed.add(filepath);
+        }
+      },
+    });
+    return changed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the *effective* root path for indexing/queries. If `somePath`
+ * lives inside a git worktree, we re-root to the worktree top — this
+ * keeps the index branch-scoped (two `git worktree add`'d directories
+ * naturally produce two separate indexes, since `repoIdFor` hashes the
+ * absolute path).
+ *
+ * Returns `{ root, redirected }` where:
+ *   - root: the path to use as the effective indexing root
+ *   - redirected: true iff we walked up (root !== somePath after resolve)
+ *
+ * Outside a git repo we leave the path untouched. Callers can opt out
+ * by passing `disable: true` (preserved for backwards compatibility).
+ */
+export function resolveIndexRoot(
+  somePath: string,
+  opts: { disable?: boolean } = {},
+): { root: string; redirected: boolean } {
+  const abs = resolve(somePath);
+  if (opts.disable) return { root: abs, redirected: false };
+  const wt = getWorktreeRoot(abs);
+  if (!wt || wt === abs) return { root: abs, redirected: false };
+  return { root: wt, redirected: true };
 }
 
 export function readGitInfo(somePath: string): GitInfo {

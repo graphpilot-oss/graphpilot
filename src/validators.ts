@@ -212,8 +212,9 @@ export interface GpImpactArgs {
   symbol: string;
   depth?: number;
   path?: string;
+  since?: string;
 }
-const GP_IMPACT_KEYS = ['symbol', 'depth', 'path'] as const;
+const GP_IMPACT_KEYS = ['symbol', 'depth', 'path', 'since'] as const;
 
 export function validateGpImpact(input: unknown): Result<GpImpactArgs> {
   if (!isPlainObject(input)) return fail('arguments must be an object');
@@ -234,9 +235,19 @@ export function validateGpImpact(input: unknown): Result<GpImpactArgs> {
   const path = pickString(input, 'path', { max: 1024 });
   if (!path.ok) return fail(path.error);
 
+  // `since` accepts a commit SHA (full or short), tag, or branch name.
+  // Capped at 200 chars — refs are normally under 100, this is a sanity
+  // bound, not a security one (isomorphic-git handles ref resolution).
+  const since = pickString(input, 'since', { max: 200 });
+  if (!since.ok) return fail(since.error);
+  if (since.value !== undefined && since.value.trim() === '') {
+    return fail('since must be a non-empty string when provided');
+  }
+
   return ok({
     symbol: symbol.value,
     depth: depth.value,
     path: path.value,
+    since: since.value,
   });
 }

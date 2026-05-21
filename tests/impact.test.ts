@@ -358,3 +358,97 @@ describe('analyzeImpact', () => {
     expect(r.target.id).toBe('b.ts#helper@1');
   });
 });
+
+// ---------------------------------------------------------------------------
+// changedFiles (differential `since` mode)
+// ---------------------------------------------------------------------------
+
+describe('analyzeImpact with changedFiles filter', () => {
+  it('filters callers to only those whose file is in changedFiles', () => {
+    const symbols = [
+      sym({ id: 'tgt.ts#target@1', name: 'target', file: 'tgt.ts' }),
+      sym({ id: 'a.ts#aFn@1', name: 'aFn', file: 'a.ts' }),
+      sym({ id: 'b.ts#bFn@1', name: 'bFn', file: 'b.ts' }),
+      sym({ id: 'c.ts#cFn@1', name: 'cFn', file: 'c.ts' }),
+    ];
+    const edges = [
+      edge({ from: 'a.ts#aFn@1', to: 'tgt.ts#target@1', file: 'a.ts' }),
+      edge({ from: 'b.ts#bFn@1', to: 'tgt.ts#target@1', file: 'b.ts' }),
+      edge({ from: 'c.ts#cFn@1', to: 'tgt.ts#target@1', file: 'c.ts' }),
+    ];
+    const idx = new GraphIndex(makeGraph(symbols, edges));
+
+    const r = analyzeImpact(idx, 'target', {
+      changedFiles: new Set(['a.ts', 'c.ts']),
+    })!;
+    expect(r.directCallers.map((c) => c.symbol.name).sort()).toEqual(['aFn', 'cFn']);
+    expect(r.stats.directCount).toBe(2);
+  });
+
+  it('returns no callers when changedFiles is empty', () => {
+    const symbols = [
+      sym({ id: 'tgt.ts#target@1', name: 'target', file: 'tgt.ts' }),
+      sym({ id: 'a.ts#aFn@1', name: 'aFn', file: 'a.ts' }),
+    ];
+    const edges = [edge({ from: 'a.ts#aFn@1', to: 'tgt.ts#target@1', file: 'a.ts' })];
+    const idx = new GraphIndex(makeGraph(symbols, edges));
+
+    const r = analyzeImpact(idx, 'target', { changedFiles: new Set() })!;
+    expect(r.directCallers).toEqual([]);
+    expect(r.transitiveCallers).toEqual([]);
+    expect(r.stats.directCount).toBe(0);
+  });
+
+  it('null changedFiles is identical to omitting the option', () => {
+    const symbols = [
+      sym({ id: 'tgt.ts#target@1', name: 'target', file: 'tgt.ts' }),
+      sym({ id: 'a.ts#aFn@1', name: 'aFn', file: 'a.ts' }),
+    ];
+    const edges = [edge({ from: 'a.ts#aFn@1', to: 'tgt.ts#target@1', file: 'a.ts' })];
+    const idx = new GraphIndex(makeGraph(symbols, edges));
+
+    const baseline = analyzeImpact(idx, 'target')!;
+    const withNull = analyzeImpact(idx, 'target', { changedFiles: null })!;
+    expect(withNull.stats.directCount).toBe(baseline.stats.directCount);
+  });
+
+  it('still resolves the target even if the target file is not in changedFiles', () => {
+    // The filter applies only to callers, not to the target lookup.
+    const symbols = [
+      sym({ id: 'tgt.ts#target@1', name: 'target', file: 'tgt.ts' }),
+      sym({ id: 'a.ts#aFn@1', name: 'aFn', file: 'a.ts' }),
+    ];
+    const edges = [edge({ from: 'a.ts#aFn@1', to: 'tgt.ts#target@1', file: 'a.ts' })];
+    const idx = new GraphIndex(makeGraph(symbols, edges));
+
+    const r = analyzeImpact(idx, 'target', { changedFiles: new Set(['a.ts']) })!;
+    expect(r).not.toBeNull();
+    expect(r.target.name).toBe('target');
+    expect(r.directCallers.length).toBe(1);
+  });
+
+  it('filters transitive callers too', () => {
+    // chain: t <- a <- b <- c
+    const symbols = [
+      sym({ id: 't.ts#t@1', name: 't', file: 't.ts' }),
+      sym({ id: 'a.ts#a@1', name: 'a', file: 'a.ts' }),
+      sym({ id: 'b.ts#b@1', name: 'b', file: 'b.ts' }),
+      sym({ id: 'c.ts#c@1', name: 'c', file: 'c.ts' }),
+    ];
+    const edges = [
+      edge({ from: 'a.ts#a@1', to: 't.ts#t@1' }),
+      edge({ from: 'b.ts#b@1', to: 'a.ts#a@1' }),
+      edge({ from: 'c.ts#c@1', to: 'b.ts#b@1' }),
+    ];
+    const idx = new GraphIndex(makeGraph(symbols, edges));
+
+    // Only c.ts changed — even though a and b are between c and t in the
+    // call chain, we filter callers by file, so only c survives.
+    const r = analyzeImpact(idx, 't', {
+      depth: 5,
+      changedFiles: new Set(['c.ts']),
+    })!;
+    expect(r.directCallers).toEqual([]);
+    expect(r.transitiveCallers.map((c) => c.symbol.name)).toEqual(['c']);
+  });
+});
