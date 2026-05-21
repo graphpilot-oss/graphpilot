@@ -20,6 +20,7 @@ import {
 } from './validators.js';
 import { withInteractionLog } from './interactions.js';
 import { analyzeImpact, type ImpactCaller, type ImpactResult } from './impact.js';
+import { getChangedFiles, resolveIndexRoot } from './git.js';
 import type { SymbolRecord } from './symbols.js';
 import type { CallEdge } from './edges.js';
 
@@ -35,7 +36,10 @@ const indexCache = new Map<string, GraphIndex>();
 function getOrLoadIndex(
   rawPath: string | undefined,
 ): { idx: GraphIndex; root: string } | { error: string; root: string } {
-  const root = resolve(rawPath ?? process.cwd());
+  // Re-root to the git worktree top so MCP tool calls from a subdir of a
+  // worktree still resolve to the branch-level index. Outside git this is
+  // a no-op.
+  const { root } = resolveIndexRoot(rawPath ?? process.cwd());
   const cached = indexCache.get(root);
   if (cached) return { idx: cached, root };
 
@@ -216,7 +220,10 @@ const TOOLS = [
       'whether the symbol is part of the public API (exported). ' +
       'Use this BEFORE proposing a rename, signature change, or behavior ' +
       'change — it answers "what breaks if I change X?" in one call instead ' +
-      'of composing multiple gp_callers queries.',
+      'of composing multiple gp_callers queries. ' +
+      'Pass `since: <commit|branch>` to restrict callers to files changed ' +
+      'since that ref — ideal for PR review ("what does this branch touch?") ' +
+      'and refactor scoping.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -233,6 +240,12 @@ const TOOLS = [
         path: {
           type: 'string',
           description: 'Repo path. Default: cwd.',
+        },
+        since: {
+          type: 'string',
+          description:
+            'Optional commit SHA, tag, or branch. When set, restricts ' +
+            'callers to files changed between that ref and HEAD.',
         },
       },
       required: ['symbol'],
@@ -278,7 +291,8 @@ function handleGpStats(args: GpStatsArgs): ToolResult {
 }
 
 async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
-  const root = resolve(args.path ?? process.cwd());
+  const requested = resolve(args.path ?? process.cwd());
+  const { root, redirected } = resolveIndexRoot(requested);
   const refusal = validateRootPath(root);
   if (refusal) return { text: `Error: ${refusal}`, results: 0, isError: true };
 
@@ -310,8 +324,12 @@ async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
     if (result.git.shortSha) parts.push(`sha ${result.git.shortSha}`);
     gitLine = `  Git:     ${parts.join(' @ ')}\n`;
   }
+  const wtNote = redirected
+    ? `(re-rooted to git worktree top; requested path was ${requested})\n`
+    : '';
   const text =
     `Indexed ${root}\n` +
+    wtNote +
     `  Files:   ${result.filesIndexed}\n` +
     `  Symbols: ${result.symbols.length}\n` +
     `  Calls:   ${result.edges.length} (${resolved} resolved)\n` +
@@ -398,10 +416,19 @@ function fmtImpactCaller(c: ImpactCaller, idx: GraphIndex): string {
   return `${head} [depth ${c.depth}]${viaText}`;
 }
 
-function fmtImpactReport(report: ImpactResult, idx: GraphIndex): string {
+function fmtImpactReport(
+  report: ImpactResult,
+  idx: GraphIndex,
+  diff: { since?: string; changedFileCount: number | null } = { changedFileCount: null },
+): string {
   const t = report.target;
   const lines: string[] = [];
   lines.push(`Impact of changing ${t.name} (${t.file}:${t.line}, kind=${t.kind}):`);
+  if (diff.since !== undefined) {
+    lines.push(
+      `(differential mode: scoped to ${diff.changedFileCount ?? 0} file(s) changed since ${diff.since})`,
+    );
+  }
   lines.push('');
 
   lines.push(`Direct callers (${report.stats.directCount}):`);
@@ -461,14 +488,32 @@ function fmtImpactReport(report: ImpactResult, idx: GraphIndex): string {
   return lines.join('\n');
 }
 
-function handleGpImpact(args: GpImpactArgs): ToolResult {
+async function handleGpImpact(args: GpImpactArgs): Promise<ToolResult> {
   const out = getOrLoadIndex(args.path);
   if ('error' in out) {
     return { text: out.error, results: 0, isError: true };
   }
-  const { idx } = out;
+  const { idx, root } = out;
 
-  const report = analyzeImpact(idx, args.symbol, { depth: args.depth });
+  let changedFiles: Set<string> | null = null;
+  if (args.since !== undefined) {
+    changedFiles = await getChangedFiles(root, args.since);
+    if (changedFiles === null) {
+      return {
+        text:
+          `Could not compute diff against "${args.since}" — either the ref ` +
+          `does not resolve to a commit, or ${root} is not a git repo. ` +
+          `Drop the \`since\` argument to see the full blast radius.`,
+        results: 0,
+        isError: true,
+      };
+    }
+  }
+
+  const report = analyzeImpact(idx, args.symbol, {
+    depth: args.depth,
+    changedFiles,
+  });
   if (!report) {
     return {
       text: `No symbol found matching "${args.symbol}".`,
@@ -477,7 +522,10 @@ function handleGpImpact(args: GpImpactArgs): ToolResult {
     };
   }
 
-  const text = fmtImpactReport(report, idx);
+  const text = fmtImpactReport(report, idx, {
+    since: args.since,
+    changedFileCount: changedFiles?.size ?? null,
+  });
   const totalResults = report.stats.directCount + report.stats.transitiveCount;
   return { text, results: totalResults };
 }
@@ -506,7 +554,10 @@ export function buildMcpServer(): Server {
 
     // We need to know the repo path *before* validation to drive the log,
     // so the log captures even invalid-input attempts. Fall back to cwd.
-    const repoRootForLog = resolve(typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd());
+    // Resolve to the worktree top so per-tool calls from a subdir land in
+    // the same interaction log as the rest of the branch's work.
+    const requestedLogPath = typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd();
+    const repoRootForLog = resolveIndexRoot(requestedLogPath).root;
 
     return withInteractionLog(repoRootForLog, name, rawArgs, async () => {
       // Validate first
@@ -554,7 +605,7 @@ export function buildMcpServer(): Server {
             result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
             break;
           }
-          result = handleGpImpact(v.value);
+          result = await handleGpImpact(v.value);
           break;
         }
         default:

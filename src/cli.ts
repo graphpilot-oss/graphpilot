@@ -5,6 +5,7 @@ import { saveGraph, loadGraph, graphPath, repoIdFor, type Graph } from './storag
 import { validateRootPath } from './validation.js';
 import { startMcpServer } from './mcp.js';
 import { GraphWatcher } from './watcher.js';
+import { resolveIndexRoot } from './git.js';
 
 const HELP = `graphpilot — structural memory for coding agents
 
@@ -22,8 +23,18 @@ Examples:
   graphpilot mcp              # used by MCP clients (Claude Code, Cursor, ...)
 `;
 
-async function cmdIndex(pathArg: string): Promise<number> {
-  const absRoot = resolve(pathArg);
+async function cmdIndex(pathArg: string, opts: { noWorktree?: boolean } = {}): Promise<number> {
+  const requested = resolve(pathArg);
+  // Worktree-scope: by default, if the user pointed inside a git worktree
+  // we re-root to the worktree top so the index covers the full branch.
+  // Pass --no-worktree to disable.
+  const { root: absRoot, redirected } = resolveIndexRoot(requested, { disable: opts.noWorktree });
+  if (redirected) {
+    process.stdout.write(
+      `[graphpilot] Re-rooting index to git worktree top: ${absRoot}\n` +
+        `             (Pass --no-worktree to index ${requested} directly.)\n`,
+    );
+  }
   // T10 defence: refuse `/`, `/etc`, `~`, and friends before walking.
   const refusal = validateRootPath(absRoot);
   if (refusal) {
@@ -98,8 +109,9 @@ async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
   switch (cmd) {
     case 'index': {
-      const path = rest[0] ?? '.';
-      return cmdIndex(path);
+      const noWorktree = rest.includes('--no-worktree');
+      const path = rest.find((a) => !a.startsWith('--')) ?? '.';
+      return cmdIndex(path, { noWorktree });
     }
     case 'status': {
       const path = rest[0] ?? '.';
@@ -112,8 +124,13 @@ async function main(): Promise<number> {
       return 0;
     }
     case 'watch': {
-      const path = rest[0] ?? '.';
-      const absRoot = resolve(path);
+      const noWorktree = rest.includes('--no-worktree');
+      const path = rest.find((a) => !a.startsWith('--')) ?? '.';
+      const requested = resolve(path);
+      const { root: absRoot, redirected } = resolveIndexRoot(requested, { disable: noWorktree });
+      if (redirected) {
+        process.stderr.write(`[graphpilot:watch] Re-rooting to worktree top: ${absRoot}\n`);
+      }
       const refusal = validateRootPath(absRoot);
       if (refusal) {
         process.stderr.write(`Error: ${refusal}\n`);
