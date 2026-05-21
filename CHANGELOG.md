@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Evidence anchors** on every MCP tool response. Symbol records and call
+  edges now carry a `file:line @ <short-sha>` provenance tag inline so the
+  agent can quote a verifiable reference. Backed by `src/provenance.ts` and
+  pure-fs git helpers in `src/git.ts` (no `child_process` — T6-safe). The
+  graph schema gained two optional fields, `indexedSha` and `indexedBranch`,
+  populated at index time when the root is inside a git worktree. Old graphs
+  load unchanged.
+- **Differential impact:** `gp_impact` now accepts `since: <commit|tag|branch>`.
+  When set, the returned callers (direct + transitive) are filtered to files
+  changed between that ref and HEAD — ideal for PR-scoped refactor review
+  ("of every caller of X, which ones does my branch actually touch?"). Diff
+  computation runs through `isomorphic-git`; pure JS, no shell-out.
+- **Worktree-scoped indexing.** `graphpilot index ./src/feature` and the
+  `gp_index` MCP tool auto-resolve to the git worktree top when called from
+  a subdirectory, so two `git worktree add`-ed branches naturally produce
+  two separate indexes. Pass `--no-worktree` to opt out and index a subdir
+  directly.
+- Repositioned the README around the "refactor-safe code graph" framing —
+  evidence-backed, branch-aware, worktree-native.
 - Initial project scaffold (Node.js + TypeScript)
 - Tree-sitter-based parser for TS/TSX/JS/JSX
 - Symbol extraction for functions, classes, methods, interfaces, type aliases, enums

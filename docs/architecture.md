@@ -1,10 +1,30 @@
 # Architecture
 
-How GraphPilot turns a folder of source files into structural memory an
-agent can query in milliseconds.
+How GraphPilot turns a folder of source files into a refactor-safe,
+branch-aware code graph an agent can query in milliseconds — with every
+answer carrying a `file:line @ sha` evidence anchor.
 
 This doc is for contributors and evaluators. If you just want to use it,
 see [quickstart.md](quickstart.md).
+
+## Three load-bearing properties
+
+1. **Evidence anchors** — `src/provenance.ts` attaches `{file, line, sha,
+excerpt}` to every symbol and call edge in tool output. The git SHA is
+   captured at index time via the pure-fs helpers in `src/git.ts` (no
+   `child_process`; we read `.git/HEAD`, `refs/heads/*`, and `packed-refs`
+   directly). Old graphs without `indexedSha` still load — the field is
+   optional in the schema.
+2. **Differential impact** — `gp_impact` takes an optional `since:
+<commit|tag|branch>`. When set, `getChangedFiles()` (in `src/git.ts`,
+   backed by `isomorphic-git` — pure JS, no shell-out) computes the diff
+   between that ref and HEAD; `analyzeImpact` filters callers to that
+   file set. Scope a refactor to your branch in one tool call.
+3. **Worktree-aware roots** — `resolveIndexRoot()` walks up to the git
+   worktree top by default, so two `git worktree add`'d branches produce
+   two separate indexes (since `repoIdFor` hashes the absolute root).
+   Both the CLI and the MCP layer route through it; opt out with
+   `--no-worktree`.
 
 ## Top-level view
 

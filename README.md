@@ -1,8 +1,8 @@
 # GraphPilot
 
-> **Structural memory for coding agents.** Your repo, understood — not just chunked.
-> Run once, then Claude Code (or any MCP-compatible agent) remembers every function,
-> every call, every import — across sessions.
+> **The refactor-safe code graph for coding agents.** Branch-aware. Evidence-backed.
+> A structural memory layer that knows what changed since `main`, cites every claim
+> with `file:line @ sha`, and re-roots itself to the git worktree automatically.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
@@ -47,19 +47,39 @@ Then wire it into Claude Code (or any MCP client): see
 Five MCP tools that any MCP-compatible agent (Claude Code, Cursor, Cline,
 Windsurf, Continue) can call:
 
-| Tool         | Use it for                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `gp_index`   | Re-index a repo from inside the agent                                                                                           |
-| `gp_recall`  | Look up a function/class/type/interface by name                                                                                 |
-| `gp_callers` | List callers (or callees) of a symbol                                                                                           |
-| `gp_impact`  | Blast radius: direct + transitive callers, tests affected, public-API flag — answers _"what breaks if I rename X?"_ in one call |
-| `gp_stats`   | Index health probe                                                                                                              |
+| Tool         | Use it for                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `gp_index`   | Re-index a repo from inside the agent                                                                                                                                                |
+| `gp_recall`  | Look up a function/class/type/interface by name                                                                                                                                      |
+| `gp_callers` | List callers (or callees) of a symbol                                                                                                                                                |
+| `gp_impact`  | Blast radius: direct + transitive callers, tests affected, public-API flag — answers _"what breaks if I rename X?"_ in one call. Pass `since: <commit\|branch>` for PR-scoped impact |
+| `gp_stats`   | Index health probe                                                                                                                                                                   |
 
 Plus `graphpilot watch` for sub-second incremental updates on file save.
 
 The index lives in `~/.graphpilot/<repo-id>/graph.json` (mode 0600). Everything
 stays local. No accounts, no telemetry, no remote calls — enforced by an
 ESLint policy on the codebase itself.
+
+## What's different
+
+Other code-graph tools (CodeGraphContext, Serena, the 15+ existing MCP servers
+in this space) treat your repo as a static blob: index once, query forever, no
+awareness of branches, no proof of where an answer came from. GraphPilot is
+built around three things none of them ship:
+
+- **Evidence anchors.** Every tool response includes `file:line @ sha` for
+  every symbol and call site. The agent can quote the anchor verbatim and
+  you can verify it instantly — fabrications get exposed the moment the user
+  jumps to the line.
+- **Differential impact (`gp_impact({since: <ref>})`).** Ask "of all the
+  callers of `X`, which ones live in code my PR touches?" — answered in one
+  call instead of `git diff | xargs grep`. Branch-scoped refactors without
+  the false-positive noise.
+- **Worktree-aware by default.** Run `graphpilot index ./src/feature` from a
+  subdir and it transparently re-roots to the git worktree top, so two
+  `git worktree add`-ed branches naturally get two separate indexes. Opt out
+  with `--no-worktree`.
 
 ## Roadmap
 
