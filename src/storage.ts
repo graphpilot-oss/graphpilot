@@ -18,6 +18,16 @@ export interface Graph {
   edgeCount: number;
   symbols: SymbolRecord[];
   edges: CallEdge[];
+  /**
+   * Optional git provenance — set when the indexed root lives inside a
+   * git worktree. Both fields may be null even within a git repo (e.g.
+   * detached HEAD has no branch; an empty repo has no SHA). Older
+   * graph.json files written before the v0.1.5 pivot won't have these
+   * fields; the schema validator treats them as optional so old graphs
+   * still load.
+   */
+  indexedSha?: string | null;
+  indexedBranch?: string | null;
 }
 
 export function repoIdFor(absRootPath: string): string {

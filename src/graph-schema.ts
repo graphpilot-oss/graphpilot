@@ -179,6 +179,29 @@ export function validateGraph(raw: unknown, errorsOut: string[] = []): Graph | n
     return null;
   }
 
+  // Optional git provenance — present in v0.1.5+ graphs, absent in older
+  // ones. We accept either shape and only sanitize when set, so old
+  // graphs still load cleanly after the pivot ships.
+  let indexedSha: string | null | undefined;
+  if (raw.indexedSha === undefined || raw.indexedSha === null) {
+    indexedSha = raw.indexedSha as null | undefined;
+  } else if (typeof raw.indexedSha === 'string') {
+    indexedSha = sanitizeString(raw.indexedSha, 64);
+    if (!indexedSha) indexedSha = null;
+  } else {
+    indexedSha = null;
+  }
+
+  let indexedBranch: string | null | undefined;
+  if (raw.indexedBranch === undefined || raw.indexedBranch === null) {
+    indexedBranch = raw.indexedBranch as null | undefined;
+  } else if (typeof raw.indexedBranch === 'string') {
+    indexedBranch = sanitizeString(raw.indexedBranch, 256);
+    if (!indexedBranch) indexedBranch = null;
+  } else {
+    indexedBranch = null;
+  }
+
   const symbols: SymbolRecord[] = [];
   for (const entry of raw.symbols) {
     const s = validateSymbol(entry, ctx);
@@ -200,5 +223,7 @@ export function validateGraph(raw: unknown, errorsOut: string[] = []): Graph | n
     edgeCount: edges.length,
     symbols,
     edges,
+    ...(indexedSha !== undefined ? { indexedSha } : {}),
+    ...(indexedBranch !== undefined ? { indexedBranch } : {}),
   };
 }

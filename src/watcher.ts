@@ -23,6 +23,7 @@ import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
 import { extractRawCalls, resolveCallEdges, type RawCall, type CallEdge } from './edges.js';
 import { saveGraph, loadGraph, repoIdFor, type Graph } from './storage.js';
+import { readGitInfo } from './git.js';
 import { indexDirectory } from './indexer.js';
 import { validateRootPath, MAX_FILES_PER_INDEX } from './validation.js';
 
@@ -275,6 +276,8 @@ export class GraphWatcher {
       edgeCount: result.edges.length,
       symbols: result.symbols,
       edges: result.edges,
+      indexedSha: result.git.sha,
+      indexedBranch: result.git.branch,
     };
     this.rawCalls = this.deriveRawCalls(result.edges);
     saveGraph(this.graph);
@@ -323,6 +326,11 @@ export class GraphWatcher {
     const files = new Set<string>();
     for (const s of symbols) files.add(s.file);
 
+    // Re-read git info on every commit — branch / sha can change between
+    // edits (e.g. user did `git checkout` mid-session) and we want the
+    // graph stamped with the *current* state. Cheap: a few fs reads.
+    const git = readGitInfo(this.absRoot);
+
     this.graph = {
       ...this.graph,
       indexedAt: new Date().toISOString(),
@@ -331,6 +339,8 @@ export class GraphWatcher {
       edgeCount: edges.length,
       symbols,
       edges,
+      indexedSha: git.sha,
+      indexedBranch: git.branch,
     };
     this.rawCalls = rawCalls;
     saveGraph(this.graph);

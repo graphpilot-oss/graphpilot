@@ -62,21 +62,32 @@ function invalidateCache(absRoot: string): void {
 // Tool-output formatting helpers (terse, agent-friendly text).
 // ----------------------------------------------------------------------------
 
-function fmtSymbol(s: SymbolRecord, index?: number): string {
+/**
+ * Render the short SHA suffix for an inline evidence anchor. Returns an
+ * empty string when the indexed root isn't in a git repo.
+ *
+ * Format: " @ ab12cd3"
+ */
+function shaTag(idx: GraphIndex): string {
+  const sha = idx.graph.indexedSha;
+  if (!sha) return '';
+  return ' @ ' + sha.slice(0, 7);
+}
+
+function fmtSymbol(s: SymbolRecord, idx: GraphIndex, index?: number): string {
   const prefix = index !== undefined ? `${index + 1}. ` : '';
   const parentTag = s.parent ? `${s.parent}.` : '';
   const exp = s.exported ? ' [exported]' : '';
+  // Evidence anchor: file:line @ sha (when in a git repo) — agent can
+  // include this verbatim in its reply for the user to verify.
   return (
-    `${prefix}${parentTag}${s.name}  (${s.kind})  ${s.file}:${s.line}${exp}\n` + `   ${s.signature}`
+    `${prefix}${parentTag}${s.name}  (${s.kind})  ${s.file}:${s.line}${shaTag(idx)}${exp}\n` +
+    `   ${s.signature}`
   );
 }
 
 function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
   const prefix = index !== undefined ? `${index + 1}. ` : '';
-  if (e.toId === null && /* edge as caller listing */ false) {
-    // never hit — kept for future safety
-    return `${prefix}<unresolved>`;
-  }
   // We don't know upfront whether this is a callers or callees listing, so the
   // safest thing is to show both ends.
   const fromSym = idx.findById(e.fromId);
@@ -89,7 +100,8 @@ function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
         return t ? `${t.parent ? t.parent + '.' : ''}${t.name}` : e.toName;
       })()
     : `${e.toName} <unresolved>`;
-  return `${prefix}${fromName}  →  ${toLabel}  (${e.file}:${e.line})`;
+  // Evidence anchor on the call site (the file:line where the call occurs).
+  return `${prefix}${fromName}  →  ${toLabel}  (${e.file}:${e.line}${shaTag(idx)})`;
 }
 
 // ----------------------------------------------------------------------------
@@ -247,10 +259,17 @@ function handleGpStats(args: GpStatsArgs): ToolResult {
   const { idx } = out;
   const s = idx.stats;
   const g = idx.graph;
+  // Git provenance — surface branch + short SHA so the agent can cite
+  // the exact commit the index was built against. Omitted gracefully
+  // when the indexed root isn't a git repo.
+  const gitLines: string[] = [];
+  if (g.indexedBranch) gitLines.push(`Branch:      ${g.indexedBranch}`);
+  if (g.indexedSha) gitLines.push(`Commit SHA:  ${g.indexedSha.slice(0, 7)}`);
   const text = [
     `Repo:        ${g.rootPath}`,
     `Repo id:     ${g.repoId}`,
     `Indexed at:  ${g.indexedAt}`,
+    ...gitLines,
     `Files:       ${g.filesIndexed}`,
     `Symbols:     ${s.symbols}`,
     `Calls:       ${s.edges} (${s.resolvedEdges} resolved)`,
@@ -274,17 +293,29 @@ async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
     edgeCount: result.edges.length,
     symbols: result.symbols,
     edges: result.edges,
+    indexedSha: result.git.sha,
+    indexedBranch: result.git.branch,
   };
   saveGraph(graph);
   // After re-index, drop the cached GraphIndex for this root so subsequent
   // calls see fresh data.
   invalidateCache(root);
   const resolved = result.edges.filter((e) => e.toId !== null).length;
+  // Mirror cmdIndex: surface git provenance in the agent-visible output so
+  // the agent can cite the exact commit it just indexed against.
+  let gitLine = '';
+  if (result.git.shortSha || result.git.branch) {
+    const parts: string[] = [];
+    if (result.git.branch) parts.push(`branch ${result.git.branch}`);
+    if (result.git.shortSha) parts.push(`sha ${result.git.shortSha}`);
+    gitLine = `  Git:     ${parts.join(' @ ')}\n`;
+  }
   const text =
     `Indexed ${root}\n` +
     `  Files:   ${result.filesIndexed}\n` +
     `  Symbols: ${result.symbols.length}\n` +
     `  Calls:   ${result.edges.length} (${resolved} resolved)\n` +
+    gitLine +
     `  Took:    ${result.durationMs}ms`;
   return { text, results: 1 };
 }
@@ -306,7 +337,7 @@ function handleGpRecall(args: GpRecallArgs): ToolResult {
     };
   }
   const header = `Found ${matches.length} symbol(s) matching "${args.query}":\n`;
-  const body = matches.map((s, i) => fmtSymbol(s, i)).join('\n\n');
+  const body = matches.map((s, i) => fmtSymbol(s, idx, i)).join('\n\n');
   return { text: header + body, results: matches.length };
 }
 
@@ -343,7 +374,10 @@ function handleGpCallers(args: GpCallersArgs): ToolResult {
   }
 
   const verb = direction === 'callers' ? 'callers of' : 'callees of';
-  const header = `${edges.length} ${verb} ${target.name} ` + `(${target.file}:${target.line}):\n`;
+  // Evidence anchor on the target itself: file:line @ sha so the agent can
+  // verify the symbol it's about to act on really lives where we say.
+  const header =
+    `${edges.length} ${verb} ${target.name} ` + `(${target.file}:${target.line}${shaTag(idx)}):\n`;
   const body = edges.map((e, i) => fmtEdge(e, idx, i)).join('\n');
   return { text: header + body, results: edges.length };
 }
@@ -353,7 +387,9 @@ function handleGpCallers(args: GpCallersArgs): ToolResult {
  * context when depth > 1 so the agent can trace the chain.
  */
 function fmtImpactCaller(c: ImpactCaller, idx: GraphIndex): string {
-  const head = `  ${c.symbol.name} (${c.symbol.file}:${c.symbol.line})`;
+  // Evidence anchor on every caller — file:line @ sha lets the agent
+  // (and ultimately the user) verify each impact entry.
+  const head = `  ${c.symbol.name} (${c.symbol.file}:${c.symbol.line}${shaTag(idx)})`;
   if (c.depth === 1) return head;
   // For transitive callers, show the immediate hop the edge connects to —
   // the symbol that this caller called (one closer to the target).

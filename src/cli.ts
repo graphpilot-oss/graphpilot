@@ -42,13 +42,24 @@ async function cmdIndex(pathArg: string): Promise<number> {
     edgeCount: result.edges.length,
     symbols: result.symbols,
     edges: result.edges,
+    indexedSha: result.git.sha,
+    indexedBranch: result.git.branch,
   };
   const saved = saveGraph(graph);
   const resolved = result.edges.filter((e) => e.toId !== null).length;
+  // Build the git stamp line lazily — only printed when we're in a git repo.
+  let gitLine = '';
+  if (result.git.shortSha || result.git.branch) {
+    const parts: string[] = [];
+    if (result.git.branch) parts.push(`branch ${result.git.branch}`);
+    if (result.git.shortSha) parts.push(`sha ${result.git.shortSha}`);
+    gitLine = `  Git:        ${parts.join(' @ ')}\n`;
+  }
   process.stdout.write(
     `\n✓ Remembered ${result.symbols.length} symbols, ${result.edges.length} calls ` +
       `(${resolved} resolved) across ${result.filesIndexed} files in ${result.durationMs}ms.\n` +
       `  Repo id:    ${graph.repoId}\n` +
+      gitLine +
       `  Graph file: ${saved}\n` +
       (result.filesFailed ? `  Failed:     ${result.filesFailed} file(s)\n` : ''),
   );
@@ -62,10 +73,19 @@ function cmdStatus(pathArg: string): number {
     process.stderr.write(`No index found for ${absRoot}\n` + `Run: graphpilot index ${pathArg}\n`);
     return 1;
   }
+  // Compose a git line if the indexed repo had provenance at the time.
+  let gitLine = '';
+  if (graph.indexedSha || graph.indexedBranch) {
+    const parts: string[] = [];
+    if (graph.indexedBranch) parts.push(`branch ${graph.indexedBranch}`);
+    if (graph.indexedSha) parts.push(`sha ${graph.indexedSha.slice(0, 7)}`);
+    gitLine = `Git:          ${parts.join(' @ ')}\n`;
+  }
   process.stdout.write(
     `Repo id:      ${graph.repoId}\n` +
       `Root:         ${graph.rootPath}\n` +
       `Indexed at:   ${graph.indexedAt}\n` +
+      gitLine +
       `Files:        ${graph.filesIndexed}\n` +
       `Symbols:      ${graph.symbolCount}\n` +
       `Calls:        ${graph.edgeCount ?? 0}\n` +

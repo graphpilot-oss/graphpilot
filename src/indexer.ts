@@ -5,6 +5,7 @@ import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
 import { extractRawCalls, resolveCallEdges, type CallEdge, type RawCall } from './edges.js';
 import { MAX_FILES_PER_INDEX } from './validation.js';
+import { readGitInfo, type GitInfo } from './git.js';
 
 export interface IndexResult {
   rootPath: string;
@@ -13,6 +14,14 @@ export interface IndexResult {
   symbols: SymbolRecord[];
   edges: CallEdge[];
   durationMs: number;
+  /**
+   * Git provenance — populated when the indexed root lives inside a
+   * git worktree. Used by the CLI / MCP layer to stamp the saved
+   * Graph with `indexedSha` / `indexedBranch` so every later tool
+   * response can carry a verifiable evidence anchor (per v0.1.5
+   * differentiation pivot).
+   */
+  git: GitInfo;
 }
 
 export interface IndexOptions {
@@ -127,6 +136,10 @@ export async function indexDirectory(
   // Second pass: resolve names to symbol ids now that we've seen every file.
   const edges = resolveCallEdges(rawCalls, symbols);
 
+  // Capture git provenance for the index timestamp. Best-effort — if
+  // the root isn't a git repo, all fields are null.
+  const git = readGitInfo(absRoot);
+
   return {
     rootPath: absRoot,
     filesIndexed,
@@ -134,5 +147,6 @@ export async function indexDirectory(
     symbols,
     edges,
     durationMs: Date.now() - start,
+    git,
   };
 }
