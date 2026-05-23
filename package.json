@@ -1,5 +1,8 @@
 {
-  "name": "graphpilot",
+  "name": "@graphpilot-oss/graphpilot",
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.0.1",
   "description": "Structural memory for coding agents.",
   "license": "Apache-2.0",

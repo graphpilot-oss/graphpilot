@@ -32,7 +32,7 @@ Once v0.1.0 publishes:
 ```bash
 npx graphpilot --help    # zero-install
 # or
-npm install -g graphpilot
+npm install -g @graphpilot-oss/graphpilot
 ```
 
 ## 2. Index your first repo
