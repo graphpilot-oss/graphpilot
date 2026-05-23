@@ -151,6 +151,6 @@ If your use case needs one of those, GraphPilot is the wrong tool.
 
 The list above is intentionally exhaustive. If you hit a real limit
 that's not documented here,
-[open an issue](https://github.com/codeakki/graphpilot/issues) —
+[open an issue](https://github.com/graphpilot-oss/graphpilot/issues) —
 "undocumented limitation" is a valid issue type and helps us keep this
 list honest.

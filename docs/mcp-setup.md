@@ -227,5 +227,5 @@ If the response includes repo id, file/symbol/edge counts, and an
 | Tool returns "Invalid input: Unknown field(s)"     | Caller passed an unrecognized argument                                           | Schemas are strict — only the documented fields are allowed                                   |
 
 Anything not in this table → please file an
-[issue](https://github.com/codeakki/graphpilot/issues) with the agent's
+[issue](https://github.com/graphpilot-oss/graphpilot/issues) with the agent's
 stderr + the failing JSON-RPC payload.

@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Discussion / Question
-    url: https://github.com/codeakki/graphpilot/discussions
+    url: https://github.com/graphpilot-oss/graphpilot/discussions
     about: Ask questions or share ideas in Discussions instead of opening an issue.

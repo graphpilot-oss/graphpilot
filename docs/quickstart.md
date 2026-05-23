@@ -15,7 +15,7 @@ questions about your codebase using GraphPilot.
 Until v0.1.0 is published to npm, build from source:
 
 ```bash
-git clone https://github.com/codeakki/graphpilot.git
+git clone https://github.com/graphpilot-oss/graphpilot.git
 cd graphpilot
 pnpm install
 pnpm build
@@ -199,4 +199,4 @@ When `gp_impact` is part of the routing, add this line so it's used too:
 | Server starts but never responds                      | You're on a build older than the Day-10 stdio fix; rebuild from `main`              |
 | The server keeps showing the same stale data          | Call `gp_index` from the agent (or re-run `node dist/cli.js index .`)               |
 
-Issues not in this table → [open an issue](https://github.com/codeakki/graphpilot/issues).
+Issues not in this table → [open an issue](https://github.com/graphpilot-oss/graphpilot/issues).

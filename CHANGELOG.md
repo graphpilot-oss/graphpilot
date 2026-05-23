@@ -135,4 +135,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `awesome-mcp-servers`).
 - `examples/<each-client>/` scaffolds.
 
-[Unreleased]: https://github.com/codeakki/graphpilot/commits/main
+[Unreleased]: https://github.com/graphpilot-oss/graphpilot/commits/main

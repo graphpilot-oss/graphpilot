@@ -441,7 +441,7 @@ the source code.
 ## How to reproduce
 
 ```bash
-git clone https://github.com/codeakki/graphpilot.git
+git clone https://github.com/graphpilot-oss/graphpilot.git
 cd graphpilot
 pnpm install
 pnpm build
