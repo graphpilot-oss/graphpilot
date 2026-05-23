@@ -48,24 +48,66 @@ Add to that: **local-first** (no telemetry, no remote calls, enforced by an ESLi
 
 ## Quickstart
 
+**1. Install the CLI**
+
 ```bash
-# Install
 npm install -g @graphpilot-oss/graphpilot
 # or: pnpm add -g @graphpilot-oss/graphpilot
-# or run without installing: npx @graphpilot-oss/graphpilot <command>
-
-# Index a repo (your own TS/JS project)
-graphpilot index /path/to/your/repo
+# or one-shot, no install: npx @graphpilot-oss/graphpilot <command>
 ```
 
-Then point your MCP client at `graphpilot mcp`. Pre-made configs for the five most common agents live in [`examples/`](examples/) — pick yours and copy the snippet.
+Verify it landed on your `PATH`:
 
 ```bash
-# Keep the index fresh as you edit (optional, recommended)
-graphpilot watch /path/to/your/repo
+graphpilot --version
 ```
 
-Full 5-minute walkthrough: [`docs/quickstart.md`](docs/quickstart.md).
+**2. Build the structural index for your repo**
+
+Run this once per project. It walks your source tree, parses each TS/JS file with tree-sitter, extracts symbols + call edges, and writes the graph to `~/.graphpilot/<repo-id>/graph.json`.
+
+```bash
+graphpilot index ~/code/my-app
+```
+
+Expect a one-line summary like `indexed 412 files · 3,981 symbols · 7,204 edges · 1.8s`.
+
+**3. Wire it into your coding agent**
+
+GraphPilot speaks MCP over stdio. Add this server entry to your agent's MCP config — every supported client uses the same two-line shape:
+
+```json
+{
+  "mcpServers": {
+    "graphpilot": {
+      "command": "graphpilot",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Where this file lives depends on the client (`~/.cursor/mcp.json`, `~/.claude.json`, Cline's settings panel, etc.). Pre-made configs with the exact file path for each agent are in [`examples/`](examples/) — copy the one for your client.
+
+Restart the agent. It now has five new tools: `gp_recall`, `gp_callers`, `gp_impact`, `gp_index`, `gp_stats` — see [The five tools](#the-five-tools) below for what each one does and when the agent should reach for it.
+
+**4. Try it**
+
+Ask your agent a structural question instead of letting it grep:
+
+> _"Use gp_impact to show me everything that breaks if I rename `parseToken`."_
+
+You should see a response with `file:line @ sha` anchors you can click straight to.
+
+**5. Keep the index fresh as you edit (optional but recommended)**
+
+```bash
+graphpilot watch ~/code/my-app
+```
+
+Sub-10 ms incremental updates on each file save. Leave it running in a terminal tab.
+
+Full 5-minute walkthrough with screenshots: [`docs/quickstart.md`](docs/quickstart.md).
 
 ## The five tools
 
