@@ -1,0 +1,13 @@
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "stdio",
+          "command": "node",
+          "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"]
+        }
+      }
+    ]
+  }
+}
