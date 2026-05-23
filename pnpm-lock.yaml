@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
+        specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       chokidar:
         specifier: ^5.0.0
@@ -21,10 +21,10 @@ importers:
         specifier: ^1.38.1
         version: 1.38.1
       tree-sitter:
-        specifier: ^0.22.4
+        specifier: 0.22.4
         version: 0.22.4
       tree-sitter-typescript:
-        specifier: ^0.23.2
+        specifier: 0.23.2
         version: 0.23.2(tree-sitter@0.22.4)
     devDependencies:
       '@types/node':
