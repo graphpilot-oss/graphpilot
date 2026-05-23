@@ -13,13 +13,11 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -31,10 +29,22 @@ jobs:
 
       - run: pnpm build
 
-      - run: pnpm publish --no-git-checks --provenance
+      # Test tags (e.g. v0.0.1-test) publish under --tag test, not latest
+      - name: Publish (test tag)
+        if: contains(github.ref_name, '-test')
+        run: pnpm publish --no-git-checks --tag test
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Real releases publish normally with provenance
+      - name: Publish (release)
+        if: "!contains(github.ref_name, '-test')"
+        run: pnpm publish --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Only create a GitHub Release for real tags, not test ones
       - uses: softprops/action-gh-release@v3
+        if: "!contains(github.ref_name, '-test')"
         with:
           generate_release_notes: true
