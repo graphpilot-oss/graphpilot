@@ -30,11 +30,13 @@
 
 ## What it is
 
-Coding agents like Claude Code, Cursor, and Cline re-`grep` your codebase every conversation. That burns tokens, hallucinates function names, and misses structural relationships ("what calls this?", "what breaks if I rename it?").
+GraphPilot is a local CLI + MCP server that indexes your TypeScript/JavaScript repo into a structural graph (symbols, callers, callees, blast radius) and exposes it to coding agents — Claude Code, Cursor, Cline, Windsurf, Continue — so they stop re-`grep`ping the same files every conversation.
 
-GraphPilot indexes the structural memory of your repo once and exposes it over the [Model Context Protocol](https://modelcontextprotocol.io). The agent reuses the same graph across sessions. **Token cost drops. Hallucinations drop. Refactors get safer.**
+The problem it solves: agents burn tokens, hallucinate function names, and miss structural relationships ("what calls this?", "what breaks if I rename it?") because each session starts from zero. GraphPilot is the persistent structural memory in between.
 
-On 10 standardized structural questions about a real TypeScript codebase, GraphPilot reaches **F1 0.89 vs grep's 0.42** while the agent reads **99.9 % fewer bytes** (721 B vs 528 KB) to reach the same conclusion. [Reproduce in 30 seconds →](bench/README.md)
+**Token cost drops. Hallucinations drop. Refactors get safer.**
+
+On 10 standardized structural questions, GraphPilot reaches **F1 0.89 vs grep's 0.42** while the agent reads **99.9 % fewer bytes** (721 B vs 528 KB) to reach the same conclusion. The same byte-cost reduction holds at scale: indexing **microsoft/TypeScript** (601 files, 17 k symbols, 70 k call edges in 10 s) gives **sub-millisecond queries** and a **99.99 % bytes-read reduction vs grep** on the compiler's hottest symbols. [Reproduce in 30 seconds →](bench/README.md)
 
 ## What makes it different
 
@@ -48,6 +50,14 @@ Add to that: **local-first** (no telemetry, no remote calls, enforced by an ESLi
 
 ## Quickstart
 
+**Prerequisites**
+
+- Node.js ≥ 20 (`node --version` to check)
+- An MCP-capable coding agent (Claude Code, Cursor, Cline, Windsurf, or Continue)
+- A TypeScript or JavaScript repo to index
+
+End-to-end time: ~3 minutes.
+
 **1. Install the CLI**
 
 ```bash
@@ -60,7 +70,10 @@ Verify it landed on your `PATH`:
 
 ```bash
 graphpilot --version
+# → 0.1.0
 ```
+
+If you see `command not found: graphpilot`, your global npm bin is not on `PATH`. Run `npm config get prefix` and add `<prefix>/bin` to your shell's `PATH`, or use the `npx` form above.
 
 **2. Build the structural index for your repo**
 
@@ -97,7 +110,7 @@ Ask your agent a structural question instead of letting it grep:
 
 > _"Use gp_impact to show me everything that breaks if I rename `parseToken`."_
 
-You should see a response with `file:line @ sha` anchors you can click straight to.
+You should see a response with `file:line @ sha` anchors you can click straight to. If the agent doesn't reach for the tool, prompt explicitly: "use the `gp_` MCP tools." If it can't see them at all, the MCP config wasn't picked up — restart the agent and re-check the config path for your client in [`examples/`](examples/).
 
 **5. Keep the index fresh as you edit (optional but recommended)**
 

@@ -32,7 +32,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,yml,yaml,md}\"",
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "bench": "tsx bench/run.ts"
+    "bench": "tsx bench/run.ts",
+    "bench:scale": "tsx bench/run-scale.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

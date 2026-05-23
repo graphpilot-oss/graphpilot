@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "corpus": "/tmp/gp-bench/TypeScript/src",
+    "corpusName": "microsoft/TypeScript (src/)",
+    "timestamp": "2026-05-23T15:58:48.698Z",
+    "nodeVersion": "v23.11.0",
+    "platform": "darwin"
+  },
+  "index": {
+    "filesIndexed": 601,
+    "filesFailed": 0,
+    "symbolCount": 17088,
+    "edgeCount": 70458,
+    "indexingMs": 10260,
+    "indexingFilesPerSec": 58.57699805068226,
+    "graphJsonBytes": 25477772,
+    "repoSourceBytes": 17564508,
+    "compressionRatio": 1.4505257989577618
+  },
+  "queries": {
+    "recall": {
+      "samples": 20,
+      "meanMs": 0.007051949999913631,
+      "p50Ms": 0.001291000000492204,
+      "p95Ms": 0.05933299999924202,
+      "maxMs": 0.05933299999924202,
+      "meanOutputBytes": 33.1
+    },
+    "callers": {
+      "samples": 20,
+      "meanMs": 0.030301999999937834,
+      "p50Ms": 0.021875000000363798,
+      "p95Ms": 0.20304099999884784,
+      "maxMs": 0.20304099999884784,
+      "meanOutputBytes": 923.55
+    },
+    "impact": {
+      "samples": 10,
+      "meanMs": 0.49822509999976317,
+      "p50Ms": 0.39966699999968114,
+      "p95Ms": 1.4190419999995356,
+      "maxMs": 1.4190419999995356,
+      "meanOutputBytes": 5643.3
+    }
+  },
+  "bytesComparison": {
+    "samples": [
+      {
+        "symbol": "push",
+        "graphpilotBytes": 692,
+        "grepBytes": 17976284,
+        "reduction": 0.9999615048360384
+      },
+      {
+        "symbol": "assert",
+        "graphpilotBytes": 1246,
+        "grepBytes": 18354444,
+        "reduction": 0.9999321145331344
+      },
+      {
+        "symbol": "forEach",
+        "graphpilotBytes": 1142,
+        "grepBytes": 16954790,
+        "reduction": 0.9999326444031451
+      },
+      {
+        "symbol": "map",
+        "graphpilotBytes": 1083,
+        "grepBytes": 17621286,
+        "reduction": 0.9999385402404796
+      },
+      {
+        "symbol": "get",
+        "graphpilotBytes": 1023,
+        "grepBytes": 20498614,
+        "reduction": 0.9999500941868558
+      }
+    ],
+    "meanReduction": 0.9999429796399306
+  }
+}
