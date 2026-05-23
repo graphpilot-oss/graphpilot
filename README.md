@@ -1,4 +1,8 @@
-# GraphPilot
+<p align="center">
+  <img src="assets/logo.png" alt="GraphPilot" width="120" />
+</p>
+
+<h1 align="center">GraphPilot</h1>
 
 > **The refactor-safe code graph for coding agents.** Branch-aware. Evidence-backed.
 > A structural memory layer that knows what changed since `main`, cites every claim
