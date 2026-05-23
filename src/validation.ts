@@ -35,7 +35,6 @@ const DANGEROUS_PATHS = new Set([
   '/Volumes',
   '/Users',
   '/home',
-  'C:\\',
   'C:\\Windows',
   'C:\\Windows\\System32',
   'C:\\Program Files',
@@ -56,6 +55,10 @@ export function validateRootPath(rawPath: string): string | null {
     return `Path does not exist or is not accessible: ${abs}`;
   }
 
+  // Reject any bare Windows drive root (C:\, D:\, etc.) — not just C:\
+  if (process.platform === 'win32' && /^[A-Za-z]:\\?$/.test(real)) {
+    return `Refusing to index system path: ${real}`;
+  }
   if (DANGEROUS_PATHS.has(real)) {
     return `Refusing to index system path: ${real}`;
   }
