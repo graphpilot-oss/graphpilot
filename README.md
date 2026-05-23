@@ -49,21 +49,20 @@ Add to that: **local-first** (no telemetry, no remote calls, enforced by an ESLi
 ## Quickstart
 
 ```bash
-# Until v0.1.0 ships to npm — build from source
-git clone https://github.com/graphpilot-oss/graphpilot.git
-cd graphpilot && pnpm install && pnpm build
+# Install
+npm install -g @graphpilot-oss/graphpilot
+# or: pnpm add -g @graphpilot-oss/graphpilot
+# or run without installing: npx @graphpilot-oss/graphpilot <command>
 
 # Index a repo (your own TS/JS project)
-node dist/cli.js index /path/to/your/repo
-
-# Wire it into your agent — see examples/ for the config
+graphpilot index /path/to/your/repo
 ```
 
 Then point your MCP client at `graphpilot mcp`. Pre-made configs for the five most common agents live in [`examples/`](examples/) — pick yours and copy the snippet.
 
 ```bash
 # Keep the index fresh as you edit (optional, recommended)
-node dist/cli.js watch /path/to/your/repo
+graphpilot watch /path/to/your/repo
 ```
 
 Full 5-minute walkthrough: [`docs/quickstart.md`](docs/quickstart.md).
