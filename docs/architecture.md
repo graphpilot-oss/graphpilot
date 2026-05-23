@@ -260,7 +260,7 @@ and personalization have data to train on. Local-only, your data.
 - stdio transport: reads JSON-RPC from stdin, writes responses to stdout
 - Diagnostics go to **stderr** (stdout is reserved for the protocol)
 - The process stays alive as long as stdin is open; exits cleanly on
-  client disconnect (see the Day-10 stdio fix)
+  client disconnect
 - No daemon mode in v0.1. One process per `~/.claude.json` entry.
 
 ## Security model
@@ -281,18 +281,18 @@ report a vulnerability. Active defences in code:
 
 ## Testing strategy
 
-| Test file                    | What it covers                                            | Tests  |
-| ---------------------------- | --------------------------------------------------------- | ------ |
-| `tests/parser.test.ts`       | Tree-sitter wiring + function detection                   | 3      |
-| `tests/symbols.test.ts`      | Per-kind symbol extraction + id format                    | 9      |
-| `tests/edges.test.ts`        | Raw call extraction + resolution + nested fns             | 10     |
-| `tests/security.test.ts`     | T1/T2/T7/T10 defences                                     | 10     |
-| `tests/query.test.ts`        | GraphIndex maps + edge cases                              | 18     |
-| `tests/validators.test.ts`   | Per-tool input validators                                 | 20     |
-| `tests/interactions.test.ts` | Sanitization + log file + env-var disable                 | 11     |
-| `tests/mcp.test.ts`          | Tools through InMemoryTransport                           | 14     |
-| `tests/mcp-stdio.test.ts`    | Real subprocess over stdio (catches the Day-10 bug class) | 3      |
-| **Total**                    |                                                           | **98** |
+| Test file                    | What it covers                                             | Tests  |
+| ---------------------------- | ---------------------------------------------------------- | ------ |
+| `tests/parser.test.ts`       | Tree-sitter wiring + function detection                    | 3      |
+| `tests/symbols.test.ts`      | Per-kind symbol extraction + id format                     | 9      |
+| `tests/edges.test.ts`        | Raw call extraction + resolution + nested fns              | 10     |
+| `tests/security.test.ts`     | T1/T2/T7/T10 defences                                      | 10     |
+| `tests/query.test.ts`        | GraphIndex maps + edge cases                               | 18     |
+| `tests/validators.test.ts`   | Per-tool input validators                                  | 20     |
+| `tests/interactions.test.ts` | Sanitization + log file + env-var disable                  | 11     |
+| `tests/mcp.test.ts`          | Tools through InMemoryTransport                            | 14     |
+| `tests/mcp-stdio.test.ts`    | Real subprocess over stdio (catches transport regressions) | 3      |
+| **Total**                    |                                                            | **98** |
 
 `InMemoryTransport` is fast and covers tool logic. `mcp-stdio.test.ts`
 spawns the real binary and drives it over stdin/stdout — slower but

@@ -23,8 +23,7 @@ You need Node.js 20+ and pnpm 9+.
 
 ## Running locally against Claude Code
 
-Once the MCP server is in (it's not yet, as of this writing), point Claude Code at
-your local build by adding to `~/.claude.json`:
+Point Claude Code at your local build by adding to `~/.claude.json`:
 
 ```jsonc
 {
@@ -92,10 +91,9 @@ in the PR description.
 
 Please don't open PRs that add:
 
-- Cross-repo indexing
+- Cross-repo indexing / workspace abstraction
 - A query DSL
 - A web visualization
-- Watch mode (manual re-index is fine for v1)
 - Stack Graphs / production-grade name resolution
 - Languages other than TS/JS
 

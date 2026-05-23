@@ -2,137 +2,76 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+_Nothing yet — new entries land here until the next release._
+
+## [0.1.0] — 2026-05-23
+
+Initial public release. GraphPilot is a local-first, refactor-safe code graph for coding agents over the Model Context Protocol.
+
 ### Added
 
-- **Evidence anchors** on every MCP tool response. Symbol records and call
-  edges now carry a `file:line @ <short-sha>` provenance tag inline so the
-  agent can quote a verifiable reference. Backed by `src/provenance.ts` and
-  pure-fs git helpers in `src/git.ts` (no `child_process` — T6-safe). The
-  graph schema gained two optional fields, `indexedSha` and `indexedBranch`,
-  populated at index time when the root is inside a git worktree. Old graphs
-  load unchanged.
-- **Differential impact:** `gp_impact` now accepts `since: <commit|tag|branch>`.
-  When set, the returned callers (direct + transitive) are filtered to files
-  changed between that ref and HEAD — ideal for PR-scoped refactor review
-  ("of every caller of X, which ones does my branch actually touch?"). Diff
-  computation runs through `isomorphic-git`; pure JS, no shell-out.
-- **Worktree-scoped indexing.** `graphpilot index ./src/feature` and the
-  `gp_index` MCP tool auto-resolve to the git worktree top when called from
-  a subdirectory, so two `git worktree add`-ed branches naturally produce
-  two separate indexes. Pass `--no-worktree` to opt out and index a subdir
-  directly.
-- Repositioned the README around the "refactor-safe code graph" framing —
-  evidence-backed, branch-aware, worktree-native.
-- Initial project scaffold (Node.js + TypeScript)
-- Tree-sitter-based parser for TS/TSX/JS/JSX
-- Symbol extraction for functions, classes, methods, interfaces, type aliases, enums
-- Directory indexer with sensible default ignores (node_modules, dist, .d.ts, etc.)
-- JSON storage at `~/.graphpilot/<repo-id>/graph.json`
-- CLI: `graphpilot index <path>`, `graphpilot status <path>`, `graphpilot mcp`
-- Call-edge extraction (`gp_callers` precursor): captures every call/new
-  expression inside a function body, attributes it to the immediate enclosing
-  function, and resolves the target across the indexed symbol table.
-- Outputs include both resolved (`toId` set) and unresolved (`toName` only) edges
-  so the agent can still see stdlib/external calls.
-- Query layer (`GraphIndex`): pre-computed lookup tables for findByName,
-  findById, callers, callees. Sub-millisecond lookups on indexed repos.
-- MCP server over stdio (`@modelcontextprotocol/sdk`). Tool surface:
-  - `gp_stats` — index health probe
-  - `gp_index` — re-index a repo from the agent
-  - `gp_recall` — find symbols by name (exact CI by default, substring opt-in)
-  - `gp_callers` — list callers or callees (with direction param)
-  - `gp_impact` — blast-radius analysis: direct callers, transitive
-    callers (BFS, depth 1–5), tests likely affected (heuristic on file
-    paths), and a public-API flag derived from `exported`. Answers "what
-    breaks if I rename X?" in a single tool call. Pure-function core in
-    `src/impact.ts`; cycle-safe; per-level cap with `truncated` flag.
-- Watch mode: `graphpilot watch <path>` keeps the index fresh as you
-  edit. Uses `chokidar` (fsevents/inotify/RDCW) with editor-save
-  debouncing. Each file save triggers an incremental update — re-parse
-  one file, drop its old contribution, re-resolve edges across the
-  whole symbol table, save atomically. Real-world 3–5 ms per save on
-  small repos. Updates serialize through an internal chain so chokidar
-  bursts can't race into a torn graph. Storage writes are atomic
-  (`.tmp` + rename) so a crash never leaves a half-written graph.json.
-  CLI runs until SIGINT.
-- Reproducible benchmark (Tier A): `pnpm bench` runs 10 hand-curated
-  structural tasks against GraphPilot's own codebase (the corpus) and
-  scores precision/recall/F1 + bytes processed vs a grep-simulator
-  baseline. Anyone with `pnpm install` can reproduce. First run:
-  **F1 0.89 vs grep 0.42, 99.9 % byte reduction (721 B vs 528 KB),
-  7 wins / 2 ties / 1 expected loss** (the string-literal task,
-  deliberately included as the honest "grep wins" case). Spec for the
-  agent-eval Tier B is in `bench/run-agent-tier.md`.
-- Contributor Covenant 2.1 code of conduct (closes GitHub Community
-  Standards check). Reporting email is `codewithakki@gmail.com`;
+#### Core engine
 
-### Dev workflow
+- Tree-sitter parser for **TypeScript, TSX, JavaScript, JSX** with a 5 MB per-file size cap and an iterative AST walk (safe on deeply-nested generated code).
+- Symbol extraction for functions, classes, methods, interfaces, type aliases, and enums. Stable symbol ids of the form `<file>#<parent>.<name>@<line>`.
+- Call-edge extraction with a two-pass name resolver — same-file first, then first global match. Unresolved external calls (`JSON.parse`, stdlib, third-party) keep their `toName` so the agent still sees the call site.
+- Directory indexer with sensible default ignores (`node_modules`, `dist`, `build`, `.git`, `coverage`, `.next`, `.nuxt`, `.cache`, `out`, `*.d.ts`), a 50 000-file hard cap, and symlink-escape protection.
+- Query layer (`GraphIndex`) with four pre-computed maps (`byName`, `byId`, `callers`, `callees`). Sub-millisecond lookups on indexed repos.
+- JSON storage at `~/.graphpilot/<repo-id>/graph.json` (mode `0600`) with versioned schema and atomic writes.
+- Worktree-aware indexing: subdirectory invocations auto-resolve to the git worktree top, so two `git worktree add`-ed branches naturally produce two separate indexes. Opt out with `--no-worktree`.
 
-- Pre-commit hooks via `lefthook` (added 2026-05-20):
-  - `pre-commit`: `pnpm typecheck` + ESLint + `prettier --check` on
-    staged source files (parallel). Hits sub-second on small changes.
-  - `commit-msg`: Conventional Commits regex enforcement. Bad messages
-    get a friendly error pointing at the format spec. Allows
-    `Merge`/`Revert`/`fixup!`/`squash!` for ergonomics.
-  - `pre-push`: full `pnpm test`. Stops broken builds from reaching
-    the remote.
-  - Bypass for emergencies: `LEFTHOOK=0 git commit` or
-    `LEFTHOOK_EXCLUDE=<jobname> git commit`. Installed automatically by
-    `pnpm install`; no manual `lefthook install` required.
-- Prettier configured (added 2026-05-20): `.prettierrc.json` + scripts
-  `pnpm format` / `pnpm format:check`. Single quotes, trailing commas,
-  100-col print width, LF endings. Normalized 31 files in one mechanical
-  pass; wired into `pnpm check` and the lefthook pre-commit so future
-  drift gets blocked.
-- Hand-rolled input validation for every MCP tool (no deps). Rejects unknown
-  fields, type errors, out-of-range numbers, oversize strings.
-- Interaction log (`~/.graphpilot/<repo-id>/interactions.jsonl`): every tool
-  call recorded locally with sanitized inputs. Enables future ranking /
-  personalization. Disabled via `GRAPHPILOT_NO_LOG=1`. Mode 0600.
+#### MCP server (five tools)
+
+- `gp_index` — re-index a repo from inside the agent.
+- `gp_recall` — find symbols by name (exact case-insensitive by default, substring opt-in).
+- `gp_callers` — list callers or callees of a symbol, with a `direction` parameter.
+- `gp_impact` — blast-radius analysis: direct + transitive callers (BFS, depth 1–5), tests likely affected, public-API flag, summary stats. Accepts `since: <commit|tag|branch>` for PR-scoped impact via `isomorphic-git` (pure JS, no shell-out).
+- `gp_stats` — health probe: repo id, `indexedAt`, file/symbol/edge counts.
+
+#### Evidence anchors
+
+Every MCP tool response includes `file:line @ <short-sha>` provenance on each symbol and call edge, so the agent can quote a verifiable reference. Old graphs without `indexedSha` continue to load (the field is optional in the schema).
+
+#### Watch mode
+
+`graphpilot watch <path>` keeps the index fresh as you edit. Uses `chokidar` with editor-save debouncing; each save triggers an incremental update (re-parse one file, re-resolve edges, atomic save) at 3–10 ms per save on small repos. Updates serialize through an internal chain to prevent torn graphs during chokidar bursts.
+
+#### CLI
+
+- `graphpilot index <path>` — index a repo
+- `graphpilot status <path>` — show what's indexed
+- `graphpilot watch <path>` — keep the index fresh
+- `graphpilot mcp` — start the MCP server over stdio
 
 ### Security
 
-- 5 MB per-file size cap (`MAX_FILE_BYTES`)
-- Iterative `walk()` (no stack overflow on deep ASTs)
-- Symlink-escape protection: `followSymbolicLinks: false` + realpath bounds check
-- 50,000 file hard cap per index (`MAX_FILES_PER_INDEX`)
-- Refuses to index `/`, `/etc`, `~`, `/Users`, Windows system paths, and macOS
-  resolved aliases (`/private/etc`, etc.)
-- Graph dir/file written with mode `0o700` / `0o600`
-- Pattern-based secret redaction at signature-extraction time
-  (`src/redact.ts`): OpenAI/Anthropic `sk-`, GitHub `ghp_`/`ghs_`, AWS
-  `AKIA`, JWTs, PEM private-key headers, Slack tokens, Stripe live keys,
-  plus a defensive long-token catch-all.
-- Schema validation on graph.json load (`src/graph-schema.ts`): strict
-  shape check, version enforcement, per-entry sanitization (control chars
-  stripped, length-capped), and recomputed counts (attacker-supplied
-  symbol/edge counts are ignored). Defends against tampered or corrupt
-  files; falls back to "no index" on rejection.
-- ESLint policy enforcing "no network in `src/`" at the build gate
-  (`eslint.config.js`): bans `http`, `https`, `undici`, `axios`,
-  `node-fetch`, `cross-fetch`, `got`, `request`, `superagent`, plus
-  `child_process`. Looser rules for `tests/` and `scripts/`. CI runs
-  `pnpm lint` as a gating job; meta-tests in `tests/lint-policy.test.ts`
-  prove the rule fires on every banned import (catches rule-rot in
-  future PRs).
+- Hand-rolled input validators on every MCP tool (zero deps): reject unknown fields, type-check every field, range-check numbers, length-cap strings, strict enums.
+- Refuses to index dangerous roots: `/`, `/etc`, `/var`, `~`, `/Users`, `/home`, Windows system paths, macOS-resolved aliases (`/private/etc`, etc.).
+- Symlink-escape protection: `followSymbolicLinks: false` + per-file realpath bounds check.
+- File-size cap (5 MB) and file-count cap (50 000) per index.
+- Storage permissions: directories `0o700`, files `0o600`.
+- Pattern-based secret redaction at signature-extraction time (`src/redact.ts`): OpenAI/Anthropic `sk-`, GitHub `ghp_`/`ghs_`, AWS `AKIA`, JWTs, PEM private-key headers, Slack tokens, Stripe live keys, plus a defensive long-token catch-all.
+- Schema validation on `graph.json` load: strict shape check, version enforcement, per-entry sanitization, recomputed counts (attacker-supplied counts are ignored). Falls back to "no index" on rejection.
+- ESLint policy enforcing **no network in `src/`** at the build gate. Bans `http`, `https`, `undici`, `axios`, `node-fetch`, `cross-fetch`, `got`, `request`, `superagent`, plus `child_process`. Meta-tests in `tests/lint-policy.test.ts` prove the rule fires on every banned import.
 
-### Pending (for v0.1.0 launch)
+### Observability
 
-- Tier-B agent benchmark — Claude-Code-in-the-loop scoring on real
-  refactor tasks; produces the "X/10 vs Y/10" headline. Spec in
-  [`bench/run-agent-tier.md`](bench/run-agent-tier.md).
-- `release.yml` workflow + npm publish on tag.
-- CodeQL + dependency-review workflows.
-- Branch protection on `main` (GitHub web UI step).
-- Hero GIF + 30-second demo video.
-- Domain + landing page.
-- MCP registry submissions (Glama, PulseMCP, mcpservers.org,
-  `awesome-mcp-servers`).
-- `examples/<each-client>/` scaffolds.
+- Interaction log at `~/.graphpilot/<repo-id>/interactions.jsonl` (mode `0600`): every tool call records sanitized inputs, result count, duration, and any error. Disable with `GRAPHPILOT_NO_LOG=1`. v0.1 does not read this log — it exists so future ranking and personalization have local-only training data.
 
-[Unreleased]: https://github.com/graphpilot-oss/graphpilot/commits/main
+### Benchmarks
+
+Reproducible Tier-A and Tier-B benchmarks (see [`bench/README.md`](bench/README.md)). On GraphPilot's own codebase:
+
+- Tier A: F1 **0.89** vs grep **0.42**, 99.9 % fewer bytes read (721 B vs 528 KB), 7 wins / 2 ties / 1 deliberate loss.
+- Tier B (simulated): 7/13 tasks vs grep 4/13 (+75 %), mean F1 0.70 vs 0.33, 6 hallucinations vs 480, 100 % evidence-anchor citation rate.
+
+### Documentation
+
+- README, [quickstart](docs/quickstart.md), [MCP setup](docs/mcp-setup.md), [architecture](docs/architecture.md), [limitations](docs/limitations.md), CONTRIBUTING, SECURITY, CODE_OF_CONDUCT.
+
+[Unreleased]: https://github.com/graphpilot-oss/graphpilot/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/graphpilot-oss/graphpilot/releases/tag/v0.1.0

@@ -196,7 +196,7 @@ When `gp_impact` is part of the routing, add this line so it's used too:
 | Every tool call returns "No GraphPilot index found"   | Run `node dist/cli.js index /path` first, and pass an absolute `path` to tool calls |
 | Tool errors with "Invalid input: Unknown field(s)..." | Schemas are strict — remove extra fields from the tool call                         |
 | `pnpm install` fails on native modules                | `pnpm approve-builds --all && pnpm rebuild`                                         |
-| Server starts but never responds                      | You're on a build older than the Day-10 stdio fix; rebuild from `main`              |
+| Server starts but never responds                      | You're on a build predating the current stdio transport fix; rebuild from `main`    |
 | The server keeps showing the same stale data          | Call `gp_index` from the agent (or re-run `node dist/cli.js index .`)               |
 
 Issues not in this table → [open an issue](https://github.com/graphpilot-oss/graphpilot/issues).

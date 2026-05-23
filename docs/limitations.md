@@ -84,24 +84,25 @@ trade-offs:
 
 ## Agent capabilities
 
-- **No impact analysis tool.** "What breaks if I change X" must be
-  composed from `gp_callers` results. A dedicated `gp_impact` tool is
-  planned for v0.3.
 - **No route detection.** Express, Fastify, NestJS, Hono handlers are
   not recognized as routes in v0.1.
-- **No test-to-unit mapping.** `tests/auth.spec.ts` does _not_ link to
-  the symbols it tests. Planned for v0.3.
+- **Heuristic test-to-unit mapping.** `gp_impact` flags tests whose paths
+  look related (filename match, `tests/` co-location), but does not
+  parse test bodies. Symbol-level "this test exercises that function"
+  precision is planned for v0.3.
 - **No semantic search.** `gp_recall` is name-only (exact case-insensitive
   or substring). "Find code similar to this snippet" — not supported.
   Deferred until 30+ users request it.
-- **No public-API extraction.** Inferable from `exported: true` symbols
-  but not a first-class tool.
+- **Public-API flag is a heuristic.** `gp_impact` returns a `publicApi`
+  boolean inferred from `exported: true` symbols; a first-class
+  public-surface extractor is not in v0.1.
 
 ## Privacy / data handling
 
 - **No telemetry, no remote calls.** Verifiable: `src/` has zero `http`,
-  `fetch`, `axios`, or analytics imports. A CI lint rule will enforce
-  this from v0.2.
+  `fetch`, `axios`, or analytics imports — enforced by an ESLint rule
+  in the build gate (`eslint.config.js`) plus a meta-test that proves
+  the rule fires on every banned import.
 - **Source code never leaves your machine.** Only the structured graph
   (names, locations, signatures, call relationships) lives in
   `~/.graphpilot/`.
