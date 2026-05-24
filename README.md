@@ -26,6 +26,10 @@
   <a href="bench/README.md">Benchmarks</a>
 </p>
 
+<p align="center">
+  <img src="docs/press/hero.gif" alt="GraphPilot demo — install, index, and query a real TypeScript repo in under 30 seconds" width="900" />
+</p>
+
 ---
 
 ## What it is
@@ -46,7 +50,7 @@ GraphPilot ships as a single npm package (`@graphpilot-oss/graphpilot`) with two
 | -------------- | ------------------------- | ---------------------------------------------------------------------------- |
 | **CLI**        | `graphpilot index <path>` | Walks your repo, builds the structural graph, writes it to `~/.graphpilot/`  |
 |                | `graphpilot watch <path>` | Keeps the graph fresh (~10 ms per file save)                                 |
-|                | `graphpilot stats`        | Health probe — when the graph was last refreshed, file/symbol/edge counts    |
+|                | `graphpilot status <path>`| Health probe — when the graph was last refreshed, file/symbol/edge counts    |
 | **MCP server** | `graphpilot mcp`          | Speaks MCP over stdio — your coding agent calls into this to query the graph |
 
 **The flow:** the **CLI** builds the index once (and `watch` keeps it warm). The **MCP server** is what your coding agent talks to — you never invoke it yourself, you just point your agent's MCP config at `graphpilot mcp` once and the agent spawns it on every session.

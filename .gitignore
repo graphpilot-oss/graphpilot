@@ -46,3 +46,8 @@ CLAUDE.md
 # Per-run benchmark output (committed baseline.json is the reference)
 bench/results/bench-*.json
 bench/results/bench-*.md
+
+# vhs tape source — local iteration only until the final launch tape lands.
+# The rendered GIF (docs/press/hero.gif) IS committed.
+docs/press/hero.tape
+docs/press/*.tape
