@@ -15,10 +15,17 @@
     "url": "https://github.com/graphpilot-oss/graphpilot/issues"
   },
   "type": "module",
-  "main": "./dist/index.js",
   "bin": {
     "graphpilot": "./dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "assets/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
   "engines": {
     "node": ">=20"
   },
