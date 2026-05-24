@@ -20,9 +20,10 @@
  *   - Excerpt is optional and short (~200 chars) — for symbol records
  *     it's the signature line. For edges it's the call expression.
  *
- * Per the differentiation research, this is the SINGLE feature no
- * competitor in the 15+ landscape has shipped. See
- * .notes/differentiation-research-2026-05-21.md §1.3.
+ * Among the code-graph MCP servers we surveyed in early 2026, none
+ * attached `{file, line, sha, excerpt}` as a first-class field on every
+ * tool response — they returned data without provenance. That makes
+ * this the highest-leverage anti-hallucination move we can ship.
  */
 
 import type { SymbolRecord } from './symbols.js';
