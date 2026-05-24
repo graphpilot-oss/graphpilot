@@ -38,6 +38,28 @@ The problem it solves: agents burn tokens, hallucinate function names, and miss 
 
 On 10 standardized structural questions, GraphPilot reaches **F1 0.89 vs grep's 0.42** while the agent reads **99.9 % fewer bytes** (721 B vs 528 KB) to reach the same conclusion. The same byte-cost reduction holds at scale: indexing **microsoft/TypeScript** (601 files, 17 k symbols, 70 k call edges in 10 s) gives **sub-millisecond queries** and a **99.99 % bytes-read reduction vs grep** on the compiler's hottest symbols. [Reproduce in 30 seconds →](bench/README.md)
 
+## One binary, two modes
+
+GraphPilot ships as a single npm package (`@graphpilot-oss/graphpilot`) with two runtime modes — most users run both.
+
+| Mode           | Command                   | What it does                                                                 |
+| -------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| **CLI**        | `graphpilot index <path>` | Walks your repo, builds the structural graph, writes it to `~/.graphpilot/`  |
+|                | `graphpilot watch <path>` | Keeps the graph fresh (~10 ms per file save)                                 |
+|                | `graphpilot stats`        | Health probe — when the graph was last refreshed, file/symbol/edge counts    |
+| **MCP server** | `graphpilot mcp`          | Speaks MCP over stdio — your coding agent calls into this to query the graph |
+
+**The flow:** the **CLI** builds the index once (and `watch` keeps it warm). The **MCP server** is what your coding agent talks to — you never invoke it yourself, you just point your agent's MCP config at `graphpilot mcp` once and the agent spawns it on every session.
+
+```
+   you ── graphpilot index/watch ──►  ~/.graphpilot/<repo>/graph.json
+                                                  │
+                                                  ▼
+   coding agent ◄── stdio JSON-RPC ── graphpilot mcp ── reads graph
+```
+
+If you only want CLI access to your code graph (no agent), run `graphpilot index` and then `graphpilot stats` / inspect `graph.json` directly. If you only want the agent integration, you still need to run `graphpilot index` once — the MCP server is read-only against the on-disk graph.
+
 ## What makes it different
 
 Other code-graph tools treat your repo as a static blob: index once, query forever, no branch awareness, no proof of where an answer came from. GraphPilot is built around three properties none of them ship:
