@@ -2,7 +2,10 @@
   "mcpServers": {
     "graphpilot": {
       "command": "node",
-      "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"]
+      "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"],
+      "env": {
+        "GRAPHPILOT_ROOT": "${workspaceFolder}"
+      }
     }
   }
 }

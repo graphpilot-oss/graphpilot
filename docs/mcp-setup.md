@@ -217,14 +217,14 @@ If the response includes repo id, file/symbol/edge counts, and an
 
 ## Troubleshooting
 
-| Symptom                                            | Likely cause                                                                               | Fix                                                                                           |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Server connects then immediately disconnects       | Server crashing on startup, or you're on a build predating the current stdio transport fix | Run `node dist/cli.js mcp` in a terminal — inspect stderr for the error. Rebuild from `main`. |
-| Client shows no servers                            | Config file has a JSON syntax error                                                        | Validate JSON; clients often silently ignore broken configs                                   |
-| Tools list but every call returns "No index found" | Path mismatch — Claude's `cwd` ≠ the path you indexed                                      | Pass an explicit `path: "/abs/path"` argument to each tool call                               |
-| Some `gp_*` tools missing from the catalog         | Stale build cached by the client                                                           | `pnpm build` then fully restart the client                                                    |
-| stderr says "Failed to load native bindings"       | `tree-sitter` native module didn't compile                                                 | `pnpm approve-builds --all && pnpm rebuild`. If on Node 23+, drop to Node 22 LTS.             |
-| Tool returns "Invalid input: Unknown field(s)"     | Caller passed an unrecognized argument                                                     | Schemas are strict — only the documented fields are allowed                                   |
+| Symptom                                            | Likely cause                                                                               | Fix                                                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server connects then immediately disconnects       | Server crashing on startup, or you're on a build predating the current stdio transport fix | Run `node dist/cli.js mcp` in a terminal — inspect stderr for the error. Rebuild from `main`.                                                  |
+| Client shows no servers                            | Config file has a JSON syntax error                                                        | Validate JSON; clients often silently ignore broken configs                                                                                    |
+| Tools list but every call returns "No index found" | Path mismatch — MCP `cwd` is often your home dir, not the open workspace                   | Use project `.cursor/mcp.json` with `"env": { "GRAPHPILOT_ROOT": "${workspaceFolder}" }`, or rely on MCP roots (Cursor) / pass explicit `path` |
+| Some `gp_*` tools missing from the catalog         | Stale build cached by the client                                                           | `pnpm build` then fully restart the client                                                                                                     |
+| stderr says "Failed to load native bindings"       | `tree-sitter` native module didn't compile                                                 | `pnpm approve-builds --all && pnpm rebuild`. If on Node 23+, drop to Node 22 LTS.                                                              |
+| Tool returns "Invalid input: Unknown field(s)"     | Caller passed an unrecognized argument                                                     | Schemas are strict — only the documented fields are allowed                                                                                    |
 
 Anything not in this table → please file an
 [issue](https://github.com/graphpilot-oss/graphpilot/issues) with the agent's

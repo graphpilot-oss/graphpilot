@@ -300,12 +300,13 @@ catches the "server starts but never responds" regression class.
 
 ## Extension points (where v0.2+ work plugs in)
 
-| Feature               | Where it would live                                | Effort |
-| --------------------- | -------------------------------------------------- | ------ |
-| ~~Watch mode~~        | Shipped: `src/watcher.ts` + `graphpilot watch` CLI | —      |
-| ~~`gp_impact` tool~~  | Shipped: `src/impact.ts` + handler in `mcp.ts`     | —      |
-| `.graphpilotignore`   | extend `DEFAULT_IGNORE` in indexer + watcher       | small  |
-| Cross-repo workspace  | new `src/workspace.ts` + workspace yaml loader     | medium |
-| Semantic search       | embedding pipeline + vector index                  | medium |
-| Stack-Graphs resolver | replace `resolveCallEdges` algorithm               | large  |
-| Python support        | new tree-sitter grammar wired through `parser.ts`  | medium |
+| Feature               | Where it would live                                     | Effort |
+| --------------------- | ------------------------------------------------------- | ------ |
+| ~~Watch mode~~        | Shipped: `src/watcher.ts` + `graphpilot watch` CLI      | —      |
+| ~~`gp_impact` tool~~  | Shipped: `src/impact.ts` + handler in `mcp.ts`          | —      |
+| `.graphpilotignore`   | extend `DEFAULT_IGNORE` in indexer + watcher            | small  |
+| Cross-repo workspace  | new `src/workspace.ts` + workspace yaml loader          | medium |
+| Semantic search       | embedding pipeline + vector index                       | medium |
+| Stack-Graphs resolver | replace `resolveCallEdges` algorithm                    | large  |
+| Python support        | new tree-sitter grammar wired through `parser.ts`       | medium |
+| ~~MCP default path~~  | Shipped: `src/repo-resolve.ts` + roots/list in `mcp.ts` | —      |

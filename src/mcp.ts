@@ -1,6 +1,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  RootsListChangedNotificationSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { resolve } from 'node:path';
 import { GraphIndex } from './query.js';
 import { indexDirectory } from './indexer.js';
@@ -21,11 +25,23 @@ import {
 import { withInteractionLog } from './interactions.js';
 import { analyzeImpact, type ImpactCaller, type ImpactResult } from './impact.js';
 import { getChangedFiles, resolveIndexRoot } from './git.js';
+import {
+  formatNoIndexError,
+  getMcpClientRoots,
+  resolveRepoPath,
+  rootUriToFilesystemPath,
+  setMcpClientRoots,
+} from './repo-resolve.js';
 import type { SymbolRecord } from './symbols.js';
 import type { CallEdge } from './edges.js';
 
 const SERVER_NAME = 'graphpilot';
 const SERVER_VERSION = '0.0.1';
+
+/** Shown on every tool's optional `path` field. */
+const PATH_FIELD_DESC =
+  'Repo root with a GraphPilot index. Optional: when omitted, resolves via ' +
+  'GRAPHPILOT_ROOT, MCP workspace roots, parent walk, or a single ~/.graphpilot index.';
 
 // ----------------------------------------------------------------------------
 // Per-process cache of loaded GraphIndex by absolute repo path.
@@ -33,13 +49,18 @@ const SERVER_VERSION = '0.0.1';
 
 const indexCache = new Map<string, GraphIndex>();
 
+/** Set when buildMcpServer wires roots handlers — used for lazy roots/list. */
+let mcpServerForRoots: Server | null = null;
+let rootsRefreshInflight: Promise<void> | null = null;
+
 function getOrLoadIndex(
   rawPath: string | undefined,
 ): { idx: GraphIndex; root: string } | { error: string; root: string } {
+  const requested = resolveRepoPath(rawPath);
   // Re-root to the git worktree top so MCP tool calls from a subdir of a
   // worktree still resolve to the branch-level index. Outside git this is
   // a no-op.
-  const { root } = resolveIndexRoot(rawPath ?? process.cwd());
+  const { root } = resolveIndexRoot(requested);
   const cached = indexCache.get(root);
   if (cached) return { idx: cached, root };
 
@@ -47,10 +68,7 @@ function getOrLoadIndex(
   if (!graph) {
     return {
       root,
-      error:
-        `No GraphPilot index found for ${root}.\n` +
-        `Ask the user to run \`graphpilot index ${rawPath ?? '.'}\` first, or ` +
-        `call the gp_index tool to build one.`,
+      error: formatNoIndexError(requested, root),
     };
   }
   const idx = new GraphIndex(graph);
@@ -122,7 +140,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Repo path. Default: cwd.' },
+        path: { type: 'string', description: PATH_FIELD_DESC },
       },
       additionalProperties: false,
     },
@@ -137,7 +155,7 @@ const TOOLS = [
       properties: {
         path: {
           type: 'string',
-          description: 'Repo path to index. Default: cwd.',
+          description: PATH_FIELD_DESC,
         },
       },
       additionalProperties: false,
@@ -168,7 +186,7 @@ const TOOLS = [
         },
         path: {
           type: 'string',
-          description: 'Repo path. Default: cwd.',
+          description: PATH_FIELD_DESC,
         },
       },
       required: ['query'],
@@ -205,7 +223,7 @@ const TOOLS = [
         },
         path: {
           type: 'string',
-          description: 'Repo path. Default: cwd.',
+          description: PATH_FIELD_DESC,
         },
       },
       required: ['symbol'],
@@ -239,7 +257,7 @@ const TOOLS = [
         },
         path: {
           type: 'string',
-          description: 'Repo path. Default: cwd.',
+          description: PATH_FIELD_DESC,
         },
         since: {
           type: 'string',
@@ -264,7 +282,8 @@ interface ToolResult {
   isError?: boolean;
 }
 
-function handleGpStats(args: GpStatsArgs): ToolResult {
+async function handleGpStats(args: GpStatsArgs): Promise<ToolResult> {
+  await ensureClientRootsCached();
   const out = getOrLoadIndex(args.path);
   if ('error' in out) {
     return { text: out.error, results: 0, isError: true };
@@ -291,7 +310,8 @@ function handleGpStats(args: GpStatsArgs): ToolResult {
 }
 
 async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
-  const requested = resolve(args.path ?? process.cwd());
+  await ensureClientRootsCached();
+  const requested = resolveRepoPath(args.path);
   const { root, redirected } = resolveIndexRoot(requested);
   const refusal = validateRootPath(root);
   if (refusal) return { text: `Error: ${refusal}`, results: 0, isError: true };
@@ -338,7 +358,8 @@ async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
   return { text, results: 1 };
 }
 
-function handleGpRecall(args: GpRecallArgs): ToolResult {
+async function handleGpRecall(args: GpRecallArgs): Promise<ToolResult> {
+  await ensureClientRootsCached();
   const out = getOrLoadIndex(args.path);
   if ('error' in out) {
     return { text: out.error, results: 0, isError: true };
@@ -359,7 +380,8 @@ function handleGpRecall(args: GpRecallArgs): ToolResult {
   return { text: header + body, results: matches.length };
 }
 
-function handleGpCallers(args: GpCallersArgs): ToolResult {
+async function handleGpCallers(args: GpCallersArgs): Promise<ToolResult> {
+  await ensureClientRootsCached();
   const out = getOrLoadIndex(args.path);
   if ('error' in out) {
     return { text: out.error, results: 0, isError: true };
@@ -489,6 +511,7 @@ function fmtImpactReport(
 }
 
 async function handleGpImpact(args: GpImpactArgs): Promise<ToolResult> {
+  await ensureClientRootsCached();
   const out = getOrLoadIndex(args.path);
   if ('error' in out) {
     return { text: out.error, results: 0, isError: true };
@@ -531,6 +554,55 @@ async function handleGpImpact(args: GpImpactArgs): Promise<ToolResult> {
 }
 
 // ----------------------------------------------------------------------------
+// MCP workspace roots (client → server)
+// ----------------------------------------------------------------------------
+
+/** Ensure roots/list has run when the client supports workspace roots. */
+async function ensureClientRootsCached(): Promise<void> {
+  if (!mcpServerForRoots?.getClientCapabilities()?.roots) return;
+  if (getMcpClientRoots().length > 0) return;
+  if (!rootsRefreshInflight) {
+    rootsRefreshInflight = refreshMcpClientRoots(mcpServerForRoots).finally(() => {
+      rootsRefreshInflight = null;
+    });
+  }
+  await rootsRefreshInflight;
+}
+
+async function refreshMcpClientRoots(server: Server): Promise<void> {
+  const caps = server.getClientCapabilities();
+  if (!caps?.roots) {
+    setMcpClientRoots([]);
+    return;
+  }
+  try {
+    const { roots } = await server.listRoots();
+    const paths = roots
+      .map((r) => rootUriToFilesystemPath(r.uri))
+      .filter((p): p is string => p !== null);
+    setMcpClientRoots(paths);
+    if (paths.length > 0) {
+      process.stderr.write(`[graphpilot] MCP workspace roots: ${paths.join(', ')}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(
+      `[graphpilot] roots/list failed: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    setMcpClientRoots([]);
+  }
+}
+
+function wireMcpClientRoots(server: Server): void {
+  mcpServerForRoots = server;
+  server.oninitialized = () => {
+    void refreshMcpClientRoots(server);
+  };
+  server.setNotificationHandler(RootsListChangedNotificationSchema, () => {
+    void refreshMcpClientRoots(server);
+  });
+}
+
+// ----------------------------------------------------------------------------
 // Server builder + dispatcher
 // ----------------------------------------------------------------------------
 
@@ -539,6 +611,7 @@ export function buildMcpServer(): Server {
     { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } },
   );
+  wireMcpClientRoots(server);
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: TOOLS as unknown as Array<{
@@ -556,7 +629,9 @@ export function buildMcpServer(): Server {
     // so the log captures even invalid-input attempts. Fall back to cwd.
     // Resolve to the worktree top so per-tool calls from a subdir land in
     // the same interaction log as the rest of the branch's work.
-    const requestedLogPath = typeof rawArgs.path === 'string' ? rawArgs.path : process.cwd();
+    const requestedLogPath = resolveRepoPath(
+      typeof rawArgs.path === 'string' ? rawArgs.path : undefined,
+    );
     const repoRootForLog = resolveIndexRoot(requestedLogPath).root;
 
     return withInteractionLog(repoRootForLog, name, rawArgs, async () => {
@@ -569,7 +644,7 @@ export function buildMcpServer(): Server {
             result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
             break;
           }
-          result = handleGpStats(v.value);
+          result = await handleGpStats(v.value);
           break;
         }
         case 'gp_index': {
@@ -587,7 +662,7 @@ export function buildMcpServer(): Server {
             result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
             break;
           }
-          result = handleGpRecall(v.value);
+          result = await handleGpRecall(v.value);
           break;
         }
         case 'gp_callers': {
@@ -596,7 +671,7 @@ export function buildMcpServer(): Server {
             result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
             break;
           }
-          result = handleGpCallers(v.value);
+          result = await handleGpCallers(v.value);
           break;
         }
         case 'gp_impact': {
