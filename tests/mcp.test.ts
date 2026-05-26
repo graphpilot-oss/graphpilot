@@ -2,8 +2,10 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { writeFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { buildMcpServer } from '../src/mcp.js';
 import { indexDirectory } from '../src/indexer.js';
 import { saveGraph, repoIdFor, type Graph } from '../src/storage.js';
@@ -331,5 +333,64 @@ describe('MCP server: gp_impact', () => {
     });
     expect(res.isError).toBe(true);
     expect(textOf(res)).toMatch(/evilExtra/);
+  });
+});
+
+describe('MCP server: default path via workspace roots', () => {
+  let rootsDir: string;
+  let rootsClient: Client;
+
+  beforeAll(async () => {
+    rootsDir = mkdtempSync(join(tmpdir(), 'graphpilot-mcp-roots-'));
+    writeFileSync(join(rootsDir, 'ping.ts'), 'export function ping() { return 1; }\n');
+    const result = await indexDirectory(rootsDir);
+    saveGraph({
+      version: 1,
+      repoId: repoIdFor(rootsDir),
+      rootPath: rootsDir,
+      indexedAt: new Date().toISOString(),
+      filesIndexed: result.filesIndexed,
+      symbolCount: result.symbols.length,
+      edgeCount: result.edges.length,
+      symbols: result.symbols,
+      edges: result.edges,
+    });
+
+    const server = buildMcpServer();
+    const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
+    rootsClient = new Client(
+      { name: 'graphpilot-test-roots', version: '0.0.0' },
+      { capabilities: { roots: { listChanged: true } } },
+    );
+    rootsClient.setRequestHandler(ListRootsRequestSchema, async () => ({
+      roots: [{ uri: pathToFileURL(rootsDir).href, name: 'workspace' }],
+    }));
+    await Promise.all([server.connect(serverTransport), rootsClient.connect(clientTransport)]);
+  });
+
+  afterAll(async () => {
+    await rootsClient?.close();
+    if (rootsDir && existsSync(rootsDir)) {
+      rmSync(rootsDir, { recursive: true, force: true });
+    }
+  });
+
+  it('gp_recall without path resolves via MCP roots/list', async () => {
+    const res = await rootsClient.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'ping' },
+    });
+    expect(res.isError).not.toBe(true);
+    expect(textOf(res)).toContain('ping');
+    expect(textOf(res)).toContain('ping.ts');
+  });
+
+  it('gp_stats without path reports the rooted workspace', async () => {
+    const res = await rootsClient.callTool({
+      name: 'gp_stats',
+      arguments: {},
+    });
+    expect(res.isError).not.toBe(true);
+    expect(textOf(res)).toContain(rootsDir);
   });
 });

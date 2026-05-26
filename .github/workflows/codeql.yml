@@ -11,6 +11,10 @@ on:
 jobs:
   analyze:
     name: Analyze
+    # CodeQL's SARIF-upload step requires GitHub Advanced Security on
+    # private repos. Skip while the repo is private; activates
+    # automatically the moment visibility flips to public.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       actions: read

@@ -9,6 +9,10 @@ permissions:
 
 jobs:
   dependency-review:
+    # The dependency-review action requires either a public repository or
+    # GitHub Advanced Security. Skip while the repo is private; the job
+    # activates automatically the moment visibility flips to public.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

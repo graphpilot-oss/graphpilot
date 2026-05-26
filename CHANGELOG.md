@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-_Nothing yet — new entries land here until the next release._
+### Added
+
+- **MCP workspace roots** — on connect, GraphPilot calls `roots/list` (when the client supports it) and uses workspace folders as the default repo path for tool calls.
+- **Default path discovery** — when `path` is omitted, resolution tries `GRAPHPILOT_ROOT`, MCP roots, walking parents of `cwd`, a unique index under `~/.graphpilot`, then `cwd`. Errors list known indexes on the machine.
+- Project-level **`.cursor/mcp.json`** template with `${workspaceFolder}` for local development.
+
+### Changed
+
+- MCP tool schemas document the new default path behaviour instead of “Default: cwd”.
 
 ## [0.1.0] — 2026-05-23
 

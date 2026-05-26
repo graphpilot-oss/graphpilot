@@ -24,10 +24,15 @@ Paste the contents of [`mcp.json`](./mcp.json) and replace `/absolute/path/to/gr
     "graphpilot": {
       "command": "node",
       "args": ["/absolute/path/to/graphpilot/dist/cli.js", "mcp"],
+      "env": {
+        "GRAPHPILOT_ROOT": "${workspaceFolder}",
+      },
     },
   },
 }
 ```
+
+`${workspaceFolder}` lets GraphPilot find the index when the agent omits `path` (MCP cwd is often your home directory, not the repo).
 
 Post-npm:
 
@@ -78,11 +83,11 @@ node /abs/path/to/graphpilot/dist/cli.js watch .
 
 ## Troubleshooting
 
-| Symptom                            | Fix                                                                                                    |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Server shows red in Settings → MCP | Click the refresh icon. If still red, run `node dist/cli.js mcp` in a terminal — inspect stderr.       |
-| `.cursorrules` ignored             | Cursor reads it on workspace open. Close and reopen the folder.                                        |
-| Tool calls return "no index"       | Pass an explicit `path: "/abs/repo"` to the tool, or `cd` to the indexed repo before launching Cursor. |
+| Symptom                            | Fix                                                                                                                                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server shows red in Settings → MCP | Click the refresh icon. If still red, run `node dist/cli.js mcp` in a terminal — inspect stderr.                                                                              |
+| `.cursorrules` ignored             | Cursor reads it on workspace open. Close and reopen the folder.                                                                                                               |
+| Tool calls return "no index"       | Add `"env": { "GRAPHPILOT_ROOT": "${workspaceFolder}" }` to MCP config (see `mcp.json`), or copy project `.cursor/mcp.json`. Cursor also sends workspace roots automatically. |
 
 ## Files in this folder
 
