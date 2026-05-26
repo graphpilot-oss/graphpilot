@@ -268,10 +268,25 @@ describe('GraphWatcher — reloadIfDrifted', () => {
     const w = new GraphWatcher(workDir, { log: (s) => lines.push(s) });
     await w.fullReindex();
 
+    // Add a symbol so the external graph is a different size (guards against
+    // 1-second mtime resolution on some Windows filesystems where a rapid
+    // write lands in the same second as the prior save).
+    const extraSym = {
+      id: 'extra.ts::extra',
+      name: 'extra',
+      kind: 'function' as const,
+      file: 'extra.ts',
+      line: 1,
+      column: 0,
+      endLine: 1,
+      signature: 'extra()',
+      exported: true,
+    };
     saveGraph({
       ...w.currentGraph,
+      symbols: [...w.currentGraph.symbols, extraSym],
+      symbolCount: w.currentGraph.symbolCount + 1,
       indexedAt: new Date().toISOString(),
-      symbolCount: w.currentGraph.symbolCount,
     });
 
     writeFileSync(join(workDir, 'f.ts'), 'export function f2() {}\n');

@@ -86,8 +86,9 @@ export class GraphWatcher {
   private watcher: FSWatcher | null = null;
   private readonly log: (line: string) => void;
   private readonly awaitStabilityMs: number;
-  /** mtime of graph.json after the last save this process performed. */
+  /** mtime + size of graph.json after the last save this process performed. */
   private lastSavedMtimeMs = 0;
+  private lastSavedSizeBytes = 0;
   /**
    * Serializes the update queue so chokidar bursts (multiple `change`
    * events in 200ms) don't race each other into a torn graph.
@@ -113,7 +114,9 @@ export class GraphWatcher {
       this.graph = loaded;
       this.rawCalls = this.deriveRawCalls(loaded.edges);
       try {
-        this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+        const st = statSync(graphPath(this.absRoot));
+        this.lastSavedMtimeMs = st.mtimeMs;
+        this.lastSavedSizeBytes = st.size;
       } catch {
         // best-effort baseline
       }
@@ -295,7 +298,9 @@ export class GraphWatcher {
     this.rawCalls = this.deriveRawCalls(result.edges);
     saveGraph(this.graph);
     try {
-      this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+      const st = statSync(graphPath(this.absRoot));
+      this.lastSavedMtimeMs = st.mtimeMs;
+      this.lastSavedSizeBytes = st.size;
     } catch {
       // best-effort
     }
@@ -342,13 +347,18 @@ export class GraphWatcher {
   private reloadIfDrifted(): void {
     if (this.lastSavedMtimeMs === 0) return; // no baseline yet
     try {
-      const currentMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
-      if (currentMtimeMs === this.lastSavedMtimeMs) return;
+      const st = statSync(graphPath(this.absRoot));
+      // Check both mtime and size: mtime alone has 1-second resolution on some
+      // Windows filesystems (FAT/exFAT, some container mounts), so a rapid
+      // external write within the same second would not be detected. Adding the
+      // size check catches content changes even when the clock doesn't advance.
+      if (st.mtimeMs === this.lastSavedMtimeMs && st.size === this.lastSavedSizeBytes) return;
       const fresh = loadGraph(this.absRoot);
       if (fresh) {
         this.graph = fresh;
         this.rawCalls = this.deriveRawCalls(fresh.edges);
-        this.lastSavedMtimeMs = currentMtimeMs;
+        this.lastSavedMtimeMs = st.mtimeMs;
+        this.lastSavedSizeBytes = st.size;
         this.log(
           `Detected external re-index (${fresh.symbolCount} symbols); reloaded before applying delta.`,
         );
@@ -388,7 +398,9 @@ export class GraphWatcher {
     this.rawCalls = rawCalls;
     saveGraph(this.graph);
     try {
-      this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+      const st = statSync(graphPath(this.absRoot));
+      this.lastSavedMtimeMs = st.mtimeMs;
+      this.lastSavedSizeBytes = st.size;
     } catch {
       // best-effort
     }
