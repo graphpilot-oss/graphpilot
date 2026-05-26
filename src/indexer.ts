@@ -99,7 +99,7 @@ export async function indexDirectory(
         filesFailed++;
         continue;
       }
-      if (!realFile.startsWith(realRoot)) {
+      if (realFile !== realRoot && !realFile.startsWith(realRoot + '/')) {
         filesSkippedSymlink++;
         continue;
       }
