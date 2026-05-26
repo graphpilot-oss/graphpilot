@@ -14,6 +14,7 @@ Usage:
   graphpilot status <path>    Show info about an indexed repo
   graphpilot watch <path>     Watch the repo and update the index on save
   graphpilot mcp              Start the MCP server (stdio)
+  graphpilot init             Drop routing-rules files for detected editors
   graphpilot help             Show this help
 
 Examples:
@@ -21,6 +22,10 @@ Examples:
   graphpilot status .
   graphpilot watch .          # keeps the index fresh as you edit
   graphpilot mcp              # used by MCP clients (Claude Code, Cursor, ...)
+  graphpilot init             # auto-detect editors and write routing rules
+  graphpilot init --all       # write rules for all supported editors
+  graphpilot init --client cursor --path /my/repo
+  graphpilot init --dry-run   # preview what would be written
 `;
 
 async function cmdIndex(pathArg: string, opts: { noWorktree?: boolean } = {}): Promise<number> {
@@ -148,6 +153,21 @@ async function main(): Promise<number> {
         process.stdin.once('close', finish);
       });
       await watcher.stop();
+      return 0;
+    }
+    case 'init': {
+      const { runInit } = await import('./init.js');
+      const allFlag = rest.includes('--all');
+      const dryRun = rest.includes('--dry-run');
+      const pathIdx = rest.indexOf('--path');
+      const pathArg = pathIdx !== -1 ? rest[pathIdx + 1] : undefined;
+      const clientIdx = rest.indexOf('--client');
+      const clientArg = clientIdx !== -1 ? rest[clientIdx + 1] : undefined;
+      const repoPath = resolve(pathArg ?? '.');
+      const clients = clientArg
+        ? ([clientArg] as Parameters<typeof runInit>[0]['clients'])
+        : undefined;
+      await runInit({ repoPath, clients, all: allFlag, dryRun });
       return 0;
     }
     case 'help':

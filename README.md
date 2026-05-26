@@ -146,6 +146,20 @@ graphpilot watch ~/code/my-app
 
 Sub-10 ms incremental updates on each file save. Leave it running in a terminal tab.
 
+**6. Drop per-editor routing rules into your repo (optional)**
+
+```bash
+graphpilot init
+```
+
+Auto-detects which editors you have installed (Cursor, Claude Code, Cline, Windsurf, Continue) and writes the matching rules file (`.cursorrules`, `CLAUDE.md`, etc.) to the current directory. The rules teach the agent to reach for `gp_*` tools before grep.
+
+```bash
+graphpilot init --all            # write rules for every supported editor
+graphpilot init --client cursor  # one editor only
+graphpilot init --dry-run        # preview without writing
+```
+
 Full 5-minute walkthrough with screenshots: [`docs/quickstart.md`](docs/quickstart.md).
 
 ## The five tools

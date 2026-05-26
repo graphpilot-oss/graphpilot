@@ -1,0 +1,39 @@
+# GraphPilot routing rules for Cline
+
+This repo has a GraphPilot structural code-graph available via MCP. Use it before grep on structural questions.
+
+## When the user asks any of:
+
+- "who calls X" / "what uses X" / "where is X called from"
+- "what does X call" / "what does X depend on"
+- "rename X — what breaks" / "impact of changing X" / "what depends on X"
+- "find function X" / "where is X defined" / "list all interfaces"
+
+→ **Use the graphpilot MCP tools BEFORE grep or reading files.**
+
+| Question kind          | Tool to call                                            |
+| ---------------------- | ------------------------------------------------------- |
+| Define / locate symbol | `gp_recall({ query, substring?, path? })`               |
+| Callers / callees      | `gp_callers({ symbol, direction, path? })`              |
+| Blast radius / rename  | `gp_impact({ symbol, depth?, path? })`                  |
+| PR-scoped blast radius | `gp_impact({ symbol, since: 'main', path? })`           |
+| Index health probe     | `gp_stats({ path? })`                                   |
+| Refresh after edits    | `gp_index({ path? })`                                   |
+
+## When NOT to use GraphPilot
+
+Fall back to grep / read for:
+
+- Comments, JSDoc, string literals, error messages
+- Config files (package.json, tsconfig.json, .env)
+- Markdown / docs
+- Languages other than TypeScript / JavaScript
+- Git history (blame, log)
+
+## After heavy editing
+
+After ~10+ file edits, call `gp_index` once before further structural questions, or run `graphpilot watch` in a side terminal for sub-10 ms incremental updates.
+
+## Citing evidence
+
+Every GraphPilot response carries `file:line @ sha` anchors. When citing results to the user, **include the anchor verbatim** — it's verifiable: the user can jump to that line and the code will match.
