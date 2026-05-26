@@ -17,12 +17,12 @@
  */
 
 import chokidar, { type FSWatcher } from 'chokidar';
-import { realpathSync } from 'node:fs';
+import { realpathSync, statSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
 import { extractRawCalls, resolveCallEdges, type RawCall, type CallEdge } from './edges.js';
-import { saveGraph, loadGraph, repoIdFor, type Graph } from './storage.js';
+import { saveGraph, loadGraph, repoIdFor, graphPath, type Graph } from './storage.js';
 import { readGitInfo } from './git.js';
 import { indexDirectory } from './indexer.js';
 import { validateRootPath, MAX_FILES_PER_INDEX } from './validation.js';
@@ -86,6 +86,8 @@ export class GraphWatcher {
   private watcher: FSWatcher | null = null;
   private readonly log: (line: string) => void;
   private readonly awaitStabilityMs: number;
+  /** mtime of graph.json after the last save this process performed. */
+  private lastSavedMtimeMs = 0;
   /**
    * Serializes the update queue so chokidar bursts (multiple `change`
    * events in 200ms) don't race each other into a torn graph.
@@ -110,6 +112,11 @@ export class GraphWatcher {
     if (loaded) {
       this.graph = loaded;
       this.rawCalls = this.deriveRawCalls(loaded.edges);
+      try {
+        this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+      } catch {
+        // best-effort baseline
+      }
     } else {
       // No existing index — caller is expected to `start()`, which will
       // build one. We initialize empty here so applyUpdate is safe to call
@@ -179,6 +186,10 @@ export class GraphWatcher {
     if (!isWatchableFile(absFilePath)) return null;
     if (!absFilePath.startsWith(this.absRoot)) return null;
 
+    // Detect mtime drift — reload before computing the delta so we apply
+    // the edit on top of the freshest known graph, not a stale in-memory one.
+    this.reloadIfDrifted();
+
     const start = Date.now();
     const rel = relative(this.absRoot, absFilePath);
     const symbolsBefore = this.graph.symbols.length;
@@ -235,6 +246,8 @@ export class GraphWatcher {
   async applyDeletion(absFilePath: string): Promise<UpdateResult | null> {
     if (!absFilePath.startsWith(this.absRoot)) return null;
 
+    this.reloadIfDrifted();
+
     const start = Date.now();
     const rel = relative(this.absRoot, absFilePath);
     const symbolsBefore = this.graph.symbols.length;
@@ -281,6 +294,11 @@ export class GraphWatcher {
     };
     this.rawCalls = this.deriveRawCalls(result.edges);
     saveGraph(this.graph);
+    try {
+      this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+    } catch {
+      // best-effort
+    }
   }
 
   /** Read-only accessor, mainly for tests + diagnostics. */
@@ -316,6 +334,31 @@ export class GraphWatcher {
   }
 
   /**
+   * If graph.json was written by another process since we last saved, reload
+   * it into memory so the next delta is applied on top of the fresh state.
+   * This handles gp_index from an agent, a parallel CLI re-index, or a
+   * git checkout while watch is running.
+   */
+  private reloadIfDrifted(): void {
+    if (this.lastSavedMtimeMs === 0) return; // no baseline yet
+    try {
+      const currentMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+      if (currentMtimeMs === this.lastSavedMtimeMs) return;
+      const fresh = loadGraph(this.absRoot);
+      if (fresh) {
+        this.graph = fresh;
+        this.rawCalls = this.deriveRawCalls(fresh.edges);
+        this.lastSavedMtimeMs = currentMtimeMs;
+        this.log(
+          `Detected external re-index (${fresh.symbolCount} symbols); reloaded before applying delta.`,
+        );
+      }
+    } catch {
+      // best-effort — if statSync fails the file is gone; next save will recreate it
+    }
+  }
+
+  /**
    * Apply a new (symbols, rawCalls) state: re-resolve edges, update the
    * graph object, save atomically.
    */
@@ -344,6 +387,11 @@ export class GraphWatcher {
     };
     this.rawCalls = rawCalls;
     saveGraph(this.graph);
+    try {
+      this.lastSavedMtimeMs = statSync(graphPath(this.absRoot)).mtimeMs;
+    } catch {
+      // best-effort
+    }
   }
 
   private finalize(

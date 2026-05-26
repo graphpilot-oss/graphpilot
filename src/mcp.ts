@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -7,7 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { GraphIndex } from './query.js';
 import { indexDirectory } from './indexer.js';
-import { loadGraph, saveGraph, repoIdFor, type Graph } from './storage.js';
+import { loadGraph, saveGraph, repoIdFor, graphPath, type Graph } from './storage.js';
 import { validateRootPath } from './validation.js';
 import {
   validateGpIndex,
@@ -46,7 +47,13 @@ const PATH_FIELD_DESC =
 // Per-process cache of loaded GraphIndex by absolute repo path.
 // ----------------------------------------------------------------------------
 
-const indexCache = new Map<string, GraphIndex>();
+interface CacheEntry {
+  idx: GraphIndex;
+  /** mtime of graph.json when this entry was loaded — used to detect out-of-band writes. */
+  mtimeMs: number;
+}
+
+const indexCache = new Map<string, CacheEntry>();
 
 /** Set when buildMcpServer wires roots handlers — used for lazy roots/list. */
 let mcpServerForRoots: Server | null = null;
@@ -60,9 +67,24 @@ function getOrLoadIndex(
   // worktree still resolve to the branch-level index. Outside git this is
   // a no-op.
   const { root } = resolveIndexRoot(requested);
-  const cached = indexCache.get(root);
-  if (cached) return { idx: cached, root };
 
+  // Check whether graph.json changed since we last loaded it. Any external
+  // writer (CLI re-index, another MCP process, gp_index from a parallel
+  // session) will bump the mtime and trigger a cache miss here.
+  let currentMtimeMs = 0;
+  try {
+    currentMtimeMs = statSync(graphPath(root)).mtimeMs;
+  } catch {
+    // File doesn't exist yet — fall through; loadGraph will return null.
+  }
+
+  const cached = indexCache.get(root);
+  if (cached && cached.mtimeMs === currentMtimeMs && currentMtimeMs !== 0) {
+    return { idx: cached.idx, root };
+  }
+
+  // Cache miss or stale entry — (re)load from disk.
+  indexCache.delete(root);
   const graph = loadGraph(root);
   if (!graph) {
     return {
@@ -71,7 +93,7 @@ function getOrLoadIndex(
     };
   }
   const idx = new GraphIndex(graph);
-  indexCache.set(root, idx);
+  indexCache.set(root, { idx, mtimeMs: currentMtimeMs });
   return { idx, root };
 }
 
