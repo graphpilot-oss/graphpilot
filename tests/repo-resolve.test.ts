@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -11,7 +11,7 @@ import {
   listIndexedRepos,
 } from '../src/repo-resolve.js';
 import { indexDirectory } from '../src/indexer.js';
-import { saveGraph, repoIdFor, type Graph } from '../src/storage.js';
+import { saveGraph, repoIdFor } from '../src/storage.js';
 
 describe('rootUriToFilesystemPath', () => {
   it('converts file:// URIs on Windows and POSIX', () => {
@@ -43,7 +43,9 @@ describe('resolveRepoPath', () => {
   const prevCwd = process.cwd();
 
   beforeEach(async () => {
-    workDir = mkdtempSync(join(tmpdir(), 'gp-resolve-'));
+    // realpath() canonicalises the macOS /var → /private/var symlink so that
+    // saved-graph repoIds match what process.cwd() returns after chdir.
+    workDir = realpathSync(mkdtempSync(join(tmpdir(), 'gp-resolve-')));
     writeFileSync(join(workDir, 'lib.ts'), 'export function seeded() {}\n');
     const result = await indexDirectory(workDir);
     saveGraph({

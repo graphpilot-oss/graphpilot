@@ -5,7 +5,6 @@ import {
   ListToolsRequestSchema,
   RootsListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { resolve } from 'node:path';
 import { GraphIndex } from './query.js';
 import { indexDirectory } from './indexer.js';
 import { loadGraph, saveGraph, repoIdFor, type Graph } from './storage.js';
