@@ -59,7 +59,10 @@ describe('runInit', () => {
     mkdirSync(join(fakeExamplesDir, 'windsurf'));
     mkdirSync(join(fakeExamplesDir, 'continue'));
     writeFileSync(join(fakeExamplesDir, 'cursor', '.cursorrules'), '# cursor routing rules\n');
-    writeFileSync(join(fakeExamplesDir, 'claude-code', 'CLAUDE.md'), '# claude routing rules\n');
+    writeFileSync(
+      join(fakeExamplesDir, 'claude-code', 'claude-routing.md'),
+      '# claude routing rules\n',
+    );
     writeFileSync(join(fakeExamplesDir, 'cline', '.clinerules'), '# cline routing rules\n');
     writeFileSync(
       join(fakeExamplesDir, 'windsurf', '.windsurfrules'),
@@ -174,7 +177,7 @@ describe('runInit', () => {
   it('EXAMPLES_DIR resolves to the real examples directory', () => {
     // Sanity: the package's own examples dir exists and has templates
     expect(existsSync(join(EXAMPLES_DIR, 'cursor', '.cursorrules'))).toBe(true);
-    expect(existsSync(join(EXAMPLES_DIR, 'claude-code', 'CLAUDE.md'))).toBe(true);
+    expect(existsSync(join(EXAMPLES_DIR, 'claude-code', 'claude-routing.md'))).toBe(true);
     expect(existsSync(join(EXAMPLES_DIR, 'cline', '.clinerules'))).toBe(true);
     expect(existsSync(join(EXAMPLES_DIR, 'windsurf', '.windsurfrules'))).toBe(true);
     expect(existsSync(join(EXAMPLES_DIR, 'continue', '.continuerules'))).toBe(true);

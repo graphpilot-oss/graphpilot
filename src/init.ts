@@ -43,7 +43,7 @@ export const CLIENTS: Record<ClientId, ClientSpec> = {
   'claude-code': {
     name: 'Claude Code',
     configPath: join(homedir(), '.claude.json'),
-    templateFile: join('claude-code', 'CLAUDE.md'),
+    templateFile: join('claude-code', 'claude-routing.md'),
     outputFile: 'CLAUDE.md',
   },
   cline: {
