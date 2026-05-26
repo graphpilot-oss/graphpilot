@@ -116,9 +116,10 @@ const TOOLS = [
   {
     name: 'gp_stats',
     description:
-      'Show GraphPilot index health for a repo (symbol count, edge count, ' +
-      'when indexed). Use this to confirm the index is fresh before asking ' +
-      'structural questions.',
+      'Show index health: when last indexed, file/symbol/edge counts, branch + SHA. ' +
+      'ALWAYS call first if other gp_* tools return unexpected results — confirms ' +
+      'the index is fresh and identifies the exact commit it was built against. ' +
+      'Do NOT use to answer questions about code structure; use gp_recall or gp_impact for that.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -130,8 +131,9 @@ const TOOLS = [
   {
     name: 'gp_index',
     description:
-      'Index or re-index a TypeScript/JavaScript repo into GraphPilot. Call ' +
-      'this when the codebase has changed materially or when no index exists.',
+      'Re-index the repo after batch edits so subsequent gp_* calls see your changes. ' +
+      'Call after any non-trivial edit session or when gp_stats shows a stale timestamp. ' +
+      'Do NOT call before every query — indexing is slow; only needed when source files changed.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -146,9 +148,11 @@ const TOOLS = [
   {
     name: 'gp_recall',
     description:
-      'Look up symbols (functions, classes, methods, types, interfaces) by ' +
-      'name. Returns kind, location, and signature. Default: exact ' +
-      'case-insensitive. Pass substring:true for partial matches.',
+      'Find a symbol definition by name — returns kind, file:line, and signature. ' +
+      'ALWAYS use instead of `grep -rn "function X"` or reading files to locate a definition: ' +
+      'pre-indexed, no false positives from comments or strings, sub-millisecond. ' +
+      'Pass substring:true for partial-name searches. ' +
+      'Do NOT use for "who calls X?" — use gp_callers for that.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -178,9 +182,12 @@ const TOOLS = [
   {
     name: 'gp_callers',
     description:
-      'List callers of a symbol (who calls it) or callees (what it calls). ' +
-      "Use direction='callers' for impact analysis ('what breaks if I " +
-      "change this?'); direction='callees' to see what a function depends on.",
+      'List every caller of a symbol (direction=callers) or everything it calls ' +
+      '(direction=callees). ALWAYS use instead of `grep -rn "X("` for "who calls X?" — ' +
+      'pre-indexed reverse map, sub-millisecond, no false positives from comments or strings. ' +
+      'Use direction=callers to find dependents before a rename; direction=callees to ' +
+      'understand what a function depends on. ' +
+      'Do NOT use for full blast-radius analysis across multiple hops — use gp_impact instead.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -215,15 +222,14 @@ const TOOLS = [
   {
     name: 'gp_impact',
     description:
-      'Analyze the BLAST RADIUS of changing a symbol. Returns direct callers, ' +
-      'transitive callers (default depth 3), tests likely affected, and ' +
-      'whether the symbol is part of the public API (exported). ' +
-      'Use this BEFORE proposing a rename, signature change, or behavior ' +
-      'change — it answers "what breaks if I change X?" in one call instead ' +
-      'of composing multiple gp_callers queries. ' +
-      'Pass `since: <commit|branch>` to restrict callers to files changed ' +
-      'since that ref — ideal for PR review ("what does this branch touch?") ' +
-      'and refactor scoping.',
+      'Compute the blast radius of a rename or signature change: direct callers, ' +
+      'transitive callers up to depth 3, affected tests, and whether the symbol is ' +
+      'exported (breaking-change risk). ALWAYS call before proposing a rename, ' +
+      'signature change, or behavior change — replaces `git diff | xargs grep` with ' +
+      'a single structured answer. ' +
+      'Pass `since: <commit|branch>` to scope callers to files changed since that ref ' +
+      '(ideal for PR review or refactor scoping). ' +
+      'Do NOT use just to see direct callers; use gp_callers for that.',
     inputSchema: {
       type: 'object',
       properties: {
