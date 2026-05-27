@@ -198,7 +198,16 @@ export async function generateTasks(): Promise<Task[]> {
 
   console.log('  Computing ground-truth answers via GP...');
   const tasks: Task[] = rawQuestions.map((q, i) => {
-    const { groundTruth, expectedKeywords } = computeGroundTruth(q);
+    let groundTruth = '';
+    let expectedKeywords: string[] = q.hints ?? [];
+    try {
+      const gt = computeGroundTruth(q);
+      groundTruth = gt.groundTruth;
+      expectedKeywords = gt.expectedKeywords;
+    } catch (err) {
+      console.warn(`  [warn] ground-truth failed for ${q.id ?? i}: ${String(err)}`);
+      groundTruth = `(ground-truth unavailable: ${String(err)})`;
+    }
     return {
       id: q.id ?? `T${String(i + 1).padStart(2, '0')}`,
       type: q.type,

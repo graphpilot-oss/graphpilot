@@ -58,9 +58,17 @@ interface GraphIndexInstance {
 }
 interface ImpactResultRaw {
   target: SymbolRecord;
-  callers: Array<{ symbol: SymbolRecord; depth: number }>;
-  affectedFiles?: string[];
-  sourceFiles?: Set<string>;
+  directCallers: Array<{ symbol: SymbolRecord; edge: CallEdge; depth: number }>;
+  transitiveCallers: Array<{ symbol: SymbolRecord; edge: CallEdge; depth: number }>;
+  testsAffected: Array<{ symbol: SymbolRecord; edge: CallEdge; depth: number }>;
+  publicApi: { exported: boolean; reason: string };
+  stats: {
+    directCount: number;
+    transitiveCount: number;
+    testCount: number;
+    sourceFileCount: number;
+    truncated: boolean;
+  };
 }
 
 let _index: GraphIndexInstance | null = null;
@@ -125,25 +133,29 @@ export function gpImpact(symbolName: string, depth = 3): string {
   const idx = getIndex();
   const result = analyzeImpact(idx, symbolName, { depth });
   if (!result) return `No symbol named "${symbolName}" found.`;
-  if (!result.callers.length)
+
+  const allCallers = [...result.directCallers, ...result.transitiveCallers];
+  if (!allCallers.length)
     return `No callers found for "${symbolName}" — changing it has minimal blast radius.`;
 
-  const affectedFiles = result.sourceFiles
-    ? Array.from(result.sourceFiles as Set<string>)
-    : (result.affectedFiles ?? []);
-
   const lines = [
-    `Impact of changing \`${result.target.name}\` — ${result.callers.length} affected callers across ${affectedFiles.length} files:`,
+    `Impact of changing \`${result.target.name}\` — ${result.stats.directCount} direct + ${result.stats.transitiveCount} transitive callers across ${result.stats.sourceFileCount} files:`,
   ];
-  for (let d = 1; d <= depth; d++) {
-    const atDepth = result.callers.filter((c) => c.depth === d);
-    if (atDepth.length) {
-      lines.push(`  Depth ${d}: ${atDepth.map((c) => c.symbol.name).join(', ')}`);
-    }
+  if (result.directCallers.length) {
+    lines.push(`  Direct (depth 1): ${result.directCallers.map((c) => c.symbol.name).join(', ')}`);
   }
-  if (affectedFiles.length) {
-    lines.push(`  Files: ${affectedFiles.join(', ')}`);
+  if (result.transitiveCallers.length) {
+    lines.push(
+      `  Transitive (depth 2+): ${result.transitiveCallers
+        .slice(0, 15)
+        .map((c) => c.symbol.name)
+        .join(', ')}${result.transitiveCallers.length > 15 ? ' …' : ''}`,
+    );
   }
+  if (result.stats.testCount) {
+    lines.push(`  Tests affected: ${result.stats.testCount}`);
+  }
+  lines.push(`  Exported: ${result.publicApi.exported}`);
   return lines.join('\n');
 }
 
