@@ -47,11 +47,15 @@ const DANGEROUS_PATHS = new Set([
   '/System',
   '/Volumes',
   '/Users',
-  // Windows
+  // Windows system paths
   'C:\\Windows',
   'C:\\Windows\\System32',
   'C:\\Program Files',
   'C:\\Program Files (x86)',
+  // Indexing C:\Users walks every user profile on the machine; C:\ProgramData
+  // holds service configs and app state that should never be leaked.
+  'C:\\Users',
+  'C:\\ProgramData',
 ]);
 
 /**
