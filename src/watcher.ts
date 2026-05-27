@@ -18,7 +18,7 @@
 
 import chokidar, { type FSWatcher } from 'chokidar';
 import { realpathSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, sep } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
 import { extractRawCalls, resolveCallEdges, type RawCall, type CallEdge } from './edges.js';
@@ -177,10 +177,12 @@ export class GraphWatcher {
     kind: 'add' | 'change' = 'change',
   ): Promise<UpdateResult | null> {
     if (!isWatchableFile(absFilePath)) return null;
-    if (!absFilePath.startsWith(this.absRoot)) return null;
+    if (absFilePath !== this.absRoot && !absFilePath.startsWith(this.absRoot + sep)) return null;
 
     const start = Date.now();
-    const rel = relative(this.absRoot, absFilePath);
+    // Normalize to POSIX separators so paths stored in graph.json are always
+    // forward-slash on every OS (same convention as indexer.ts).
+    const rel = relative(this.absRoot, absFilePath).split(sep).join('/');
     const symbolsBefore = this.graph.symbols.length;
     const edgesBefore = this.graph.edges.length;
 
@@ -233,10 +235,10 @@ export class GraphWatcher {
 
   /** Drop everything that came from a deleted file. */
   async applyDeletion(absFilePath: string): Promise<UpdateResult | null> {
-    if (!absFilePath.startsWith(this.absRoot)) return null;
+    if (absFilePath !== this.absRoot && !absFilePath.startsWith(this.absRoot + sep)) return null;
 
     const start = Date.now();
-    const rel = relative(this.absRoot, absFilePath);
+    const rel = relative(this.absRoot, absFilePath).split(sep).join('/');
     const symbolsBefore = this.graph.symbols.length;
     const edgesBefore = this.graph.edges.length;
 

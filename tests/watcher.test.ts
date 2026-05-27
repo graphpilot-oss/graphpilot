@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, unlinkSync, existsSync, readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  unlinkSync,
+  existsSync,
+  readFileSync,
+} from 'node:fs';
 import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { GraphWatcher } from '../src/watcher.js';
@@ -246,5 +254,50 @@ describe('GraphWatcher — diagnostic output', () => {
     const raw = readFileSync(join(repoDir(workDir), 'graph.json'), 'utf8');
     expect(raw).toContain('newOne');
     expect(raw).not.toContain('oldOne');
+  });
+});
+
+describe('GraphWatcher — POSIX path normalization', () => {
+  it('stores forward-slash file paths in symbols after applyUpdate (Windows regression)', async () => {
+    const file = join(workDir, 'sub', 'deep.ts');
+    mkdirSync(join(workDir, 'sub'), { recursive: true });
+    writeFileSync(file, 'export function deep() {}\n');
+
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    await w.fullReindex();
+
+    // All symbol.file paths must use forward slashes, never OS sep.
+    for (const s of w.currentGraph.symbols) {
+      expect(s.file).not.toContain('\\');
+    }
+  });
+
+  it('applyUpdate POSIX normalization: file path in added symbol uses forward slash', async () => {
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    await w.fullReindex();
+
+    const sub = join(workDir, 'pkg', 'util.ts');
+    mkdirSync(join(workDir, 'pkg'), { recursive: true });
+    writeFileSync(sub, 'export function util() {}\n');
+    await w.applyUpdate(sub, 'add');
+
+    const sym = w.currentGraph.symbols.find((s) => s.name === 'util');
+    expect(sym).toBeDefined();
+    expect(sym!.file).toBe('pkg/util.ts');
+    expect(sym!.file).not.toContain('\\');
+  });
+
+  it('applyDeletion uses POSIX path and correctly removes symbols', async () => {
+    const sub = join(workDir, 'mod', 'gone.ts');
+    mkdirSync(join(workDir, 'mod'), { recursive: true });
+    writeFileSync(sub, 'export function gone() {}\n');
+
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    await w.fullReindex();
+    expect(w.currentGraph.symbols.some((s) => s.name === 'gone')).toBe(true);
+
+    unlinkSync(sub);
+    await w.applyDeletion(sub);
+    expect(w.currentGraph.symbols.some((s) => s.name === 'gone')).toBe(false);
   });
 });
