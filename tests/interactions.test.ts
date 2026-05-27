@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { logInteraction, sanitizeInput, withInteractionLog } from '../src/interactions.js';
@@ -146,6 +154,50 @@ describe('logInteraction', () => {
 // ---------------------------------------------------------------------------
 // withInteractionLog
 // ---------------------------------------------------------------------------
+
+describe('logInteraction — log rotation', () => {
+  function seedOversizedLog(repoRoot: string): string {
+    const dir = repoDir(repoRoot);
+    mkdirSync(dir, { recursive: true });
+    const p = logPath(repoRoot);
+    // Write 10 MB + 1 byte so the rotator triggers on next logInteraction call.
+    writeFileSync(p, 'x'.repeat(10 * 1024 * 1024 + 1));
+    return p;
+  }
+
+  function triggerLog(repoRoot: string): void {
+    logInteraction(repoRoot, {
+      ts: new Date().toISOString(),
+      tool: 'gp_stats',
+      input: {},
+      results: 1,
+      durationMs: 1,
+    });
+  }
+
+  it('rotates when log exceeds MAX_LOG_BYTES', () => {
+    const path = seedOversizedLog(fakeRepoRoot);
+    expect(statSync(path).size).toBeGreaterThan(10 * 1024 * 1024);
+
+    triggerLog(fakeRepoRoot);
+
+    // Old log renamed to .1; new .jsonl created for the fresh entry.
+    expect(existsSync(path + '.1')).toBe(true);
+    expect(statSync(path).size).toBeLessThan(10 * 1024 * 1024);
+  });
+
+  it('rotates even when .1 archive already exists (no Windows rename failure)', () => {
+    const path = seedOversizedLog(fakeRepoRoot);
+    // Pre-create an existing archive — renameSync on Windows fails if dst exists.
+    writeFileSync(path + '.1', 'old archive data');
+
+    expect(() => triggerLog(fakeRepoRoot)).not.toThrow();
+
+    // .1 was overwritten and a new .jsonl started.
+    expect(existsSync(path + '.1')).toBe(true);
+    expect(statSync(path).size).toBeLessThan(10 * 1024 * 1024);
+  });
+});
 
 describe('withInteractionLog', () => {
   it('logs a successful call and returns the value', async () => {

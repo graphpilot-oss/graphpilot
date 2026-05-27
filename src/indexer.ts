@@ -110,7 +110,7 @@ export async function indexDirectory(
       const fileCalls = extractRawCalls(parsed, fileSymbols);
 
       if (useRelative) {
-        const rel = relative(absRoot, file);
+        const rel = relative(absRoot, file).split(sep).join('/');
         // Track id rewrites so call edges can be remapped in lockstep.
         const idRewrites = new Map<string, string>();
         for (const s of fileSymbols) {

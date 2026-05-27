@@ -194,7 +194,9 @@ export class GraphWatcher {
     this.reloadIfDrifted();
 
     const start = Date.now();
-    const rel = relative(this.absRoot, absFilePath);
+    // Normalize to POSIX separators so paths stored in graph.json are always
+    // forward-slash on every OS (same convention as indexer.ts).
+    const rel = relative(this.absRoot, absFilePath).split(sep).join('/');
     const symbolsBefore = this.graph.symbols.length;
     const edgesBefore = this.graph.edges.length;
 
@@ -252,7 +254,7 @@ export class GraphWatcher {
     this.reloadIfDrifted();
 
     const start = Date.now();
-    const rel = relative(this.absRoot, absFilePath);
+    const rel = relative(this.absRoot, absFilePath).split(sep).join('/');
     const symbolsBefore = this.graph.symbols.length;
     const edgesBefore = this.graph.edges.length;
 

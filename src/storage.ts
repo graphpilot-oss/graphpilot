@@ -59,7 +59,8 @@ export function saveGraph(graph: Graph): string {
   // fail T4's schema validator and force a full re-index. Defends watch
   // mode (which writes many times) against ungraceful shutdowns.
   const tmpPath = path + '.tmp';
-  writeFileSync(tmpPath, JSON.stringify(graph, null, 2), {
+  const pretty = process.env['GRAPHPILOT_PRETTY'] === '1';
+  writeFileSync(tmpPath, pretty ? JSON.stringify(graph, null, 2) : JSON.stringify(graph), {
     encoding: 'utf8',
     mode: 0o600,
   });
