@@ -1,6 +1,6 @@
 import fg from 'fast-glob';
 import { realpathSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, sep } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
 import { extractRawCalls, resolveCallEdges, type CallEdge, type RawCall } from './edges.js';
@@ -99,7 +99,7 @@ export async function indexDirectory(
         filesFailed++;
         continue;
       }
-      if (!realFile.startsWith(realRoot)) {
+      if (realFile !== realRoot && !realFile.startsWith(realRoot + sep)) {
         filesSkippedSymlink++;
         continue;
       }
