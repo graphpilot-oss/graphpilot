@@ -65,6 +65,14 @@ const DANGEROUS_PATHS = new Set([
 export function validateRootPath(rawPath: string): string | null {
   const abs = resolve(rawPath);
 
+  // Check the unnormalized absolute path first so that entries like /sbin are
+  // caught even on distros where /sbin is a symlink to /usr/sbin (merged-/usr
+  // layout on Debian/Ubuntu 22+ and Fedora). realpathSync would resolve it to
+  // /usr/sbin which is not in the set, causing a bypass.
+  if (DANGEROUS_PATHS.has(abs)) {
+    return `Refusing to index system path: ${abs}`;
+  }
+
   let real: string;
   try {
     real = realpathSync(abs);
@@ -76,6 +84,8 @@ export function validateRootPath(rawPath: string): string | null {
   if (process.platform === 'win32' && /^[A-Za-z]:\\?$/.test(real)) {
     return `Refusing to index system path: ${real}`;
   }
+  // Also check the resolved form — catches cases where a non-dangerous-looking
+  // path resolves to a dangerous one via a symlink.
   if (DANGEROUS_PATHS.has(real)) {
     return `Refusing to index system path: ${real}`;
   }
