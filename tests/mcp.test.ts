@@ -336,6 +336,72 @@ describe('MCP server: gp_impact', () => {
   });
 });
 
+describe('MCP server: indexCache invalidation', () => {
+  // Separate tmpdir so we can freely overwrite graph.json without racing
+  // against the shared workDir used by other describe blocks.
+  let cacheDir: string;
+  let cacheClient: Client;
+
+  beforeAll(async () => {
+    cacheDir = mkdtempSync(join(tmpdir(), 'graphpilot-mcp-cache-'));
+    writeFileSync(join(cacheDir, 'v1.ts'), 'export function v1() { return 1; }\n');
+    const r = await indexDirectory(cacheDir);
+    saveGraph({
+      version: 1,
+      repoId: repoIdFor(cacheDir),
+      rootPath: cacheDir,
+      indexedAt: new Date().toISOString(),
+      filesIndexed: r.filesIndexed,
+      symbolCount: r.symbols.length,
+      edgeCount: r.edges.length,
+      symbols: r.symbols,
+      edges: r.edges,
+    });
+
+    const server = buildMcpServer();
+    const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
+    cacheClient = new Client(
+      { name: 'graphpilot-test-cache', version: '0.0.0' },
+      { capabilities: {} },
+    );
+    await Promise.all([server.connect(serverTransport), cacheClient.connect(clientTransport)]);
+  });
+
+  afterAll(async () => {
+    await cacheClient?.close();
+    if (cacheDir && existsSync(cacheDir)) {
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns fresh data after graph.json is overwritten externally', async () => {
+    // Prime the cache: first call populates indexCache with symbolCount=1.
+    const res1 = await cacheClient.callTool({ name: 'gp_stats', arguments: { path: cacheDir } });
+    expect(res1.isError).not.toBe(true);
+    expect(textOf(res1)).toMatch(/Symbols:\s*1/);
+
+    // External process re-indexes and writes a graph with 2 symbols.
+    writeFileSync(join(cacheDir, 'v2.ts'), 'export function v2() { return 2; }\n');
+    const r2 = await indexDirectory(cacheDir);
+    saveGraph({
+      version: 1,
+      repoId: repoIdFor(cacheDir),
+      rootPath: cacheDir,
+      indexedAt: new Date().toISOString(),
+      filesIndexed: r2.filesIndexed,
+      symbolCount: r2.symbols.length,
+      edgeCount: r2.edges.length,
+      symbols: r2.symbols,
+      edges: r2.edges,
+    });
+
+    // Second call: mtime changed → cache evicted → fresh load → 2 symbols.
+    const res2 = await cacheClient.callTool({ name: 'gp_stats', arguments: { path: cacheDir } });
+    expect(res2.isError).not.toBe(true);
+    expect(textOf(res2)).toMatch(/Symbols:\s*2/);
+  });
+});
+
 describe('MCP server: default path via workspace roots', () => {
   let rootsDir: string;
   let rootsClient: Client;
