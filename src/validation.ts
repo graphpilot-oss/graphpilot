@@ -18,27 +18,44 @@ export const MAX_FILES_PER_INDEX = 50_000;
 const DANGEROUS_PATHS = new Set([
   '/',
   '/bin',
+  '/boot',
+  '/dev',
+  '/etc',
+  '/home',
+  '/lib',
+  '/lib64',
+  '/opt',
+  '/proc',
+  '/root',
+  '/run',
   '/sbin',
+  '/srv',
+  '/sys',
+  '/tmp',
   '/usr',
   '/usr/bin',
   '/usr/local',
-  '/etc',
   '/var',
-  '/tmp',
+  // macOS canonical forms (symlinks resolve to /private/*)
   '/private',
   '/private/etc',
   '/private/var',
   '/private/tmp',
+  // macOS top-level
+  '/Applications',
   '/Library',
   '/System',
-  '/Applications',
   '/Volumes',
   '/Users',
-  '/home',
+  // Windows system paths
   'C:\\Windows',
   'C:\\Windows\\System32',
   'C:\\Program Files',
   'C:\\Program Files (x86)',
+  // Indexing C:\Users walks every user profile on the machine; C:\ProgramData
+  // holds service configs and app state that should never be leaked.
+  'C:\\Users',
+  'C:\\ProgramData',
 ]);
 
 /**
@@ -47,6 +64,14 @@ const DANGEROUS_PATHS = new Set([
  */
 export function validateRootPath(rawPath: string): string | null {
   const abs = resolve(rawPath);
+
+  // Check the unnormalized absolute path first so that entries like /sbin are
+  // caught even on distros where /sbin is a symlink to /usr/sbin (merged-/usr
+  // layout on Debian/Ubuntu 22+ and Fedora). realpathSync would resolve it to
+  // /usr/sbin which is not in the set, causing a bypass.
+  if (DANGEROUS_PATHS.has(abs)) {
+    return `Refusing to index system path: ${abs}`;
+  }
 
   let real: string;
   try {
@@ -59,6 +84,8 @@ export function validateRootPath(rawPath: string): string | null {
   if (process.platform === 'win32' && /^[A-Za-z]:\\?$/.test(real)) {
     return `Refusing to index system path: ${real}`;
   }
+  // Also check the resolved form — catches cases where a non-dangerous-looking
+  // path resolves to a dangerous one via a symlink.
   if (DANGEROUS_PATHS.has(real)) {
     return `Refusing to index system path: ${real}`;
   }

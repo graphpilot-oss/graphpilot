@@ -11,7 +11,7 @@ import {
 import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { GraphWatcher } from '../src/watcher.js';
-import { repoDir, loadGraph } from '../src/storage.js';
+import { repoDir, loadGraph, saveGraph } from '../src/storage.js';
 
 /**
  * Tests drive applyUpdate / applyDeletion directly. We do NOT spin chokidar
@@ -227,6 +227,91 @@ describe('GraphWatcher — on-disk side effects', () => {
 
     const names = w.currentGraph.symbols.map((s) => s.name).sort();
     expect(names).toEqual(['a2', 'b2']);
+  });
+});
+
+describe('GraphWatcher — reloadIfDrifted', () => {
+  it('picks up external re-index before applying next delta', async () => {
+    writeFileSync(join(workDir, 'base.ts'), 'export function base() {}\n');
+    writeFileSync(join(workDir, 'extra.ts'), 'export function extra() {}\n');
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    await w.fullReindex();
+
+    expect(w.currentGraph.symbols.map((s) => s.name).sort()).toContain('extra');
+
+    // Simulate external gp_index: write an extra symbol into graph.json from
+    // outside this watcher instance. The mtime will advance.
+    const externalSymbol = {
+      id: 'injected.ts::injected',
+      name: 'injected',
+      kind: 'function' as const,
+      file: 'injected.ts',
+      line: 1,
+      column: 0,
+      endLine: 1,
+      signature: 'injected()',
+      exported: true,
+    };
+    saveGraph({
+      ...w.currentGraph,
+      symbols: [...w.currentGraph.symbols, externalSymbol],
+      symbolCount: w.currentGraph.symbolCount + 1,
+      indexedAt: new Date().toISOString(),
+    });
+
+    // A normal edit event on base.ts should reload the external graph first,
+    // then apply its own delta on top — preserving 'injected'.
+    writeFileSync(join(workDir, 'base.ts'), 'export function base2() {}\n');
+    await w.applyUpdate(join(workDir, 'base.ts'), 'change');
+
+    const names = w.currentGraph.symbols.map((s) => s.name).sort();
+    expect(names).toContain('injected');
+    expect(names).toContain('base2');
+    expect(names).not.toContain('base');
+  });
+
+  it('logs a message when external drift is detected', async () => {
+    writeFileSync(join(workDir, 'f.ts'), 'export function f() {}\n');
+    const lines: string[] = [];
+    const w = new GraphWatcher(workDir, { log: (s) => lines.push(s) });
+    await w.fullReindex();
+
+    // Add a symbol so the external graph is a different size (guards against
+    // 1-second mtime resolution on some Windows filesystems where a rapid
+    // write lands in the same second as the prior save).
+    const extraSym = {
+      id: 'extra.ts::extra',
+      name: 'extra',
+      kind: 'function' as const,
+      file: 'extra.ts',
+      line: 1,
+      column: 0,
+      endLine: 1,
+      signature: 'extra()',
+      exported: true,
+    };
+    saveGraph({
+      ...w.currentGraph,
+      symbols: [...w.currentGraph.symbols, extraSym],
+      symbolCount: w.currentGraph.symbolCount + 1,
+      indexedAt: new Date().toISOString(),
+    });
+
+    writeFileSync(join(workDir, 'f.ts'), 'export function f2() {}\n');
+    await w.applyUpdate(join(workDir, 'f.ts'), 'change');
+
+    expect(lines.some((l) => /external re-index/i.test(l))).toBe(true);
+  });
+
+  it('does nothing when no baseline mtime exists (no prior save)', async () => {
+    // Fresh watcher with no existing graph — lastSavedMtimeMs stays 0.
+    // applyUpdate should still work without crashing.
+    writeFileSync(join(workDir, 'g.ts'), 'export function g() {}\n');
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    // No fullReindex — graph is empty, no baseline mtime.
+    await w.applyUpdate(join(workDir, 'g.ts'), 'add');
+    // Symbol extracted even without prior baseline (rawCalls resolve is fine).
+    expect(w.currentGraph.symbols.some((s) => s.name === 'g')).toBe(true);
   });
 });
 

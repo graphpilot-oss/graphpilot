@@ -112,5 +112,15 @@ export function loadGraph(absRootPath: string): Graph | null {
     );
     return null;
   }
+  // Reject graphs whose stored rootPath doesn't match the directory we
+  // derived the storage path from. Guards against a graph.json copied from
+  // another project landing in a sibling repo's ~/.graphpilot/<id>/ slot.
+  if (validated.rootPath !== absRootPath) {
+    process.stderr.write(
+      `[graphpilot] graph.json rootPath mismatch: stored "${validated.rootPath}" ` +
+        `but requested "${absRootPath}" — ignoring stale index.\n`,
+    );
+    return null;
+  }
   return validated;
 }
