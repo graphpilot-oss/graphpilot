@@ -26,7 +26,8 @@ async function main(): Promise<void> {
       await generateTasks();
       break;
 
-    case 'run': {
+    case 'run':
+    case 'bench': {
       // Optional: --tasks T01,T03 --mode baseline
       const taskArg = extra.find((a) => a.startsWith('--tasks='))?.split('=')[1];
       const modeArg = extra.find((a) => a.startsWith('--mode='))?.split('=')[1] as

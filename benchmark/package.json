@@ -6,9 +6,10 @@
   "scripts": {
     "setup": "node_modules/.bin/tsx src/index.ts setup",
     "generate": "node_modules/.bin/tsx src/index.ts generate",
-    "run": "node_modules/.bin/tsx src/index.ts run",
+    "bench": "node_modules/.bin/tsx src/index.ts run",
     "report": "node_modules/.bin/tsx src/index.ts report",
-    "all": "node_modules/.bin/tsx src/index.ts all"
+    "all": "node_modules/.bin/tsx src/index.ts all",
+    "help": "node_modules/.bin/tsx src/index.ts help"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

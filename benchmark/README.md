@@ -31,7 +31,7 @@ pnpm all
 ```bash
 pnpm setup        # clone fastify, build GraphPilot, index the repo
 pnpm generate     # read 30 fastify files → ask Claude for 40 questions → compute GP ground truth
-pnpm run          # run 40 tasks × 2 modes, print live progress, save results
+pnpm bench        # run 40 tasks × 2 modes, print live progress, save results
 pnpm report       # re-generate markdown report from the most recent run
 ```
 
@@ -44,11 +44,11 @@ against the same question set, or `pnpm generate` to get a fresh question set.
 
 ```bash
 # Run only specific tasks
-pnpm run -- --tasks=T01,T05,T10
+pnpm bench -- --tasks=T01,T05,T10
 
 # Run only one mode (useful for comparing or re-running half)
-pnpm run -- --mode=baseline
-pnpm run -- --mode=gp
+pnpm bench -- --mode=baseline
+pnpm bench -- --mode=gp
 ```
 
 ---
