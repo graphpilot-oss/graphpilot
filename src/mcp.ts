@@ -49,8 +49,14 @@ const PATH_FIELD_DESC =
 
 interface CacheEntry {
   idx: GraphIndex;
-  /** mtime of graph.json when this entry was loaded — used to detect out-of-band writes. */
+  /**
+   * mtime + size of graph.json when this entry was loaded.
+   * Size is checked alongside mtime because some filesystems (Windows FAT/exFAT,
+   * certain container mounts) have 1-second mtime resolution — a write within
+   * the same second would share the mtime but produce a different size.
+   */
   mtimeMs: number;
+  sizeBytes: number;
 }
 
 const indexCache = new Map<string, CacheEntry>();
@@ -72,14 +78,22 @@ function getOrLoadIndex(
   // writer (CLI re-index, another MCP process, gp_index from a parallel
   // session) will bump the mtime and trigger a cache miss here.
   let currentMtimeMs = 0;
+  let currentSizeBytes = 0;
   try {
-    currentMtimeMs = statSync(graphPath(root)).mtimeMs;
+    const st = statSync(graphPath(root));
+    currentMtimeMs = st.mtimeMs;
+    currentSizeBytes = st.size;
   } catch {
     // File doesn't exist yet — fall through; loadGraph will return null.
   }
 
   const cached = indexCache.get(root);
-  if (cached && cached.mtimeMs === currentMtimeMs && currentMtimeMs !== 0) {
+  if (
+    cached &&
+    currentMtimeMs !== 0 &&
+    cached.mtimeMs === currentMtimeMs &&
+    cached.sizeBytes === currentSizeBytes
+  ) {
     return { idx: cached.idx, root };
   }
 
@@ -93,7 +107,7 @@ function getOrLoadIndex(
     };
   }
   const idx = new GraphIndex(graph);
-  indexCache.set(root, { idx, mtimeMs: currentMtimeMs });
+  indexCache.set(root, { idx, mtimeMs: currentMtimeMs, sizeBytes: currentSizeBytes });
   return { idx, root };
 }
 
