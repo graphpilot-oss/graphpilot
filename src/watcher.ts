@@ -17,7 +17,7 @@
  */
 
 import chokidar, { type FSWatcher } from 'chokidar';
-import { realpathSync } from 'node:fs';
+import { realpathSync, statSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
