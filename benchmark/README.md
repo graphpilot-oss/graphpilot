@@ -49,7 +49,14 @@ pnpm bench -- --tasks=T01,T05,T10
 # Run only one mode (useful for comparing or re-running half)
 pnpm bench -- --mode=baseline
 pnpm bench -- --mode=gp
+
+
+pnpm bench -- --mode=gp --baseline-from=2026-05-27T16-38-29
 ```
+
+`--baseline-from` accepts a results timestamp directory name or a full path to
+`raw.json`. The baseline results are merged into the new run before saving, so
+the report generator has both modes for comparison.
 
 ---
 

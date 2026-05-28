@@ -2,7 +2,7 @@
  * run.ts — execute the benchmark for all tasks in both modes.
  * Saves raw results JSON and prints live progress.
  */
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { RESULTS_DIR, MODEL } from './config.js';
 import { runTask } from './runner.js';
@@ -20,7 +20,11 @@ function fmtTokens(n: number): string {
 }
 
 export async function runBenchmark(
-  opts: { taskFilter?: string[]; modesOnly?: ('baseline' | 'gp')[] } = {},
+  opts: {
+    taskFilter?: string[];
+    modesOnly?: ('baseline' | 'gp')[];
+    baselineFrom?: string; // timestamp or full path to a previous raw.json
+  } = {},
 ): Promise<string> {
   const tasks = loadTasks();
   const filtered = opts.taskFilter?.length
@@ -28,7 +32,20 @@ export async function runBenchmark(
     : tasks;
 
   const modes: ('baseline' | 'gp')[] = opts.modesOnly ?? ['baseline', 'gp'];
+
   const results: TaskResult[] = [];
+  if (opts.baselineFrom) {
+    const srcPath = opts.baselineFrom.endsWith('.json')
+      ? opts.baselineFrom
+      : join(RESULTS_DIR, opts.baselineFrom, 'raw.json');
+    if (!existsSync(srcPath)) throw new Error(`--baseline-from: file not found: ${srcPath}`);
+    const prev = JSON.parse(readFileSync(srcPath, 'utf8')) as BenchmarkRun;
+    const baselineResults = prev.results.filter(
+      (r) => r.mode === 'baseline' && (!opts.taskFilter || opts.taskFilter.includes(r.taskId)),
+    );
+    results.push(...baselineResults);
+    console.log(`Loaded ${baselineResults.length} baseline results from ${srcPath}`);
+  }
 
   console.log(`\n=== BENCHMARK RUN ===`);
   console.log(`Model  : ${MODEL}`);

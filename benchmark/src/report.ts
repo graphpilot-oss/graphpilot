@@ -6,6 +6,20 @@ import { join } from 'node:path';
 import { RESULTS_DIR } from './config.js';
 import type { BenchmarkRun, TaskResult, Summary, TaskType } from './types.js';
 
+// claude-sonnet-4-5 pricing (per 1M tokens)
+const PRICE_INPUT_PER_M = 3.0;
+const PRICE_OUTPUT_PER_M = 15.0;
+
+function computeCost(inputTokens: number, outputTokens: number): number {
+  return (
+    (inputTokens / 1_000_000) * PRICE_INPUT_PER_M + (outputTokens / 1_000_000) * PRICE_OUTPUT_PER_M
+  );
+}
+
+function fmtCost(usd: number): string {
+  return `$${usd.toFixed(2)}`;
+}
+
 function pct(a: number, b: number): string {
   if (b === 0) return '—';
   return `${Math.round(((b - a) / b) * 100)}%`;
@@ -103,6 +117,15 @@ function formatReport(run: BenchmarkRun): string {
     `| Correct answers | ${s.baselineCorrect}/${s.totalTasks} | ${s.gpCorrect}/${s.totalTasks} | — |`,
   );
   lines.push(`| Avg time/task | ${s.baselineAvgMs}ms | ${s.gpAvgMs}ms | — |`);
+
+  const bCost = computeCost(s.baselineTokens.input, s.baselineTokens.output);
+  const gCost = computeCost(s.gpTokens.input, s.gpTokens.output);
+  const costSaved = bCost - gCost;
+  const costSavedPct = bCost ? Math.round((costSaved / bCost) * 100) : 0;
+  lines.push(
+    `| **Est. cost (sonnet-4-5)** | **${fmtCost(bCost)}** | **${fmtCost(gCost)}** | **${fmtCost(costSaved)} (${costSavedPct}%)** |`,
+  );
+  lines.push(`| _(pricing: $3/M input, $15/M output)_ | | | |`);
   lines.push('');
 
   // ── By task type ─────────────────────────────────────────────────────────

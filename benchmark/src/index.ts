@@ -34,9 +34,10 @@ async function main(): Promise<void> {
         | 'baseline'
         | 'gp'
         | undefined;
+      const baselineFromArg = extra.find((a) => a.startsWith('--baseline-from='))?.split('=')[1];
       const taskFilter = taskArg ? taskArg.split(',') : undefined;
       const modesOnly = modeArg ? [modeArg] : undefined;
-      const rawPath = await runBenchmark({ taskFilter, modesOnly });
+      const rawPath = await runBenchmark({ taskFilter, modesOnly, baselineFrom: baselineFromArg });
       generateReport(rawPath);
       break;
     }
@@ -69,8 +70,9 @@ Commands:
   pnpm report     Re-generate report from most recent run
 
 Options for run:
-  --tasks=T01,T05   Only run specific tasks
-  --mode=baseline   Only run one mode
+  --tasks=T01,T05                        Only run specific tasks
+  --mode=baseline                        Only run one mode
+  --baseline-from=2026-05-27T16-38-29    Load baseline from a previous run (use with --mode=gp)
 
 Prerequisites:
   Copy .env.example → .env and set ANTHROPIC_API_KEY
