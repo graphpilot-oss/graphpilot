@@ -52,7 +52,7 @@ window). Type `/mcp` — you should see:
 
 ```
 graphpilot
-  5 tools: gp_index, gp_recall, gp_callers, gp_impact, gp_stats
+  4 tools: gp_index, gp_recall, gp_callers, gp_impact
 ```
 
 **Common gotcha:** `~/.claude.json` is read only on launch. Edits don't
@@ -207,7 +207,7 @@ opt-in and documented.
 node /abs/path/to/graphpilot/dist/cli.js index .
 
 # Then in your agent:
-# "Use graphpilot's gp_stats tool to show the index for this repo."
+# "Use graphpilot's gp_recall tool to list symbols in this repo."
 ```
 
 If the response includes repo id, file/symbol/edge counts, and an

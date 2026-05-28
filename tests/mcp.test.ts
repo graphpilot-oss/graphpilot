@@ -55,7 +55,7 @@ describe('MCP server: protocol handshake + tool catalog', () => {
   it('lists the v0.1 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall', 'gp_stats']);
+    expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall']);
   });
 
   it('every tool has a description and an object input schema', async () => {
@@ -64,36 +64,6 @@ describe('MCP server: protocol handshake + tool catalog', () => {
       expect(t.description?.length).toBeGreaterThan(20);
       expect(t.inputSchema?.type).toBe('object');
     }
-  });
-});
-
-describe('MCP server: gp_stats tool', () => {
-  it('returns index summary for a known repo', async () => {
-    const res = await client.callTool({
-      name: 'gp_stats',
-      arguments: { path: workDir },
-    });
-    expect(res.isError).not.toBe(true);
-    const text = (res.content as Array<{ type: string; text: string }>)
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text)
-      .join('\n');
-    expect(text).toContain('Symbols:');
-    expect(text).toContain('Calls:');
-    expect(text).toContain(workDir);
-  });
-
-  it('returns a friendly error for an un-indexed path', async () => {
-    const fakePath = join(tmpdir(), `graphpilot-noindex-${Date.now()}`);
-    const res = await client.callTool({
-      name: 'gp_stats',
-      arguments: { path: fakePath },
-    });
-    expect(res.isError).toBe(true);
-    const text = (res.content as Array<{ type: string; text: string }>)
-      .map((c) => c.text)
-      .join('\n');
-    expect(text).toMatch(/No GraphPilot index/i);
   });
 });
 
@@ -376,9 +346,12 @@ describe('MCP server: indexCache invalidation', () => {
 
   it('returns fresh data after graph.json is overwritten externally', async () => {
     // Prime the cache: first call populates indexCache with symbolCount=1.
-    const res1 = await cacheClient.callTool({ name: 'gp_stats', arguments: { path: cacheDir } });
+    const res1 = await cacheClient.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'v1', path: cacheDir },
+    });
     expect(res1.isError).not.toBe(true);
-    expect(textOf(res1)).toMatch(/Symbols:\s*1/);
+    expect(textOf(res1)).toContain('v1');
 
     // External process re-indexes and writes a graph with 2 symbols.
     writeFileSync(join(cacheDir, 'v2.ts'), 'export function v2() { return 2; }\n');
@@ -395,10 +368,13 @@ describe('MCP server: indexCache invalidation', () => {
       edges: r2.edges,
     });
 
-    // Second call: mtime changed → cache evicted → fresh load → 2 symbols.
-    const res2 = await cacheClient.callTool({ name: 'gp_stats', arguments: { path: cacheDir } });
+    // Second call: mtime changed → cache evicted → fresh load → v2 now visible.
+    const res2 = await cacheClient.callTool({
+      name: 'gp_recall',
+      arguments: { query: 'v2', path: cacheDir },
+    });
     expect(res2.isError).not.toBe(true);
-    expect(textOf(res2)).toMatch(/Symbols:\s*2/);
+    expect(textOf(res2)).toContain('v2');
   });
 });
 
@@ -451,12 +427,12 @@ describe('MCP server: default path via workspace roots', () => {
     expect(textOf(res)).toContain('ping.ts');
   });
 
-  it('gp_stats without path reports the rooted workspace', async () => {
+  it('gp_recall without path resolves via MCP roots/list (ping symbol)', async () => {
     const res = await rootsClient.callTool({
-      name: 'gp_stats',
-      arguments: {},
+      name: 'gp_recall',
+      arguments: { query: 'ping' },
     });
     expect(res.isError).not.toBe(true);
-    expect(textOf(res)).toContain(rootsDir);
+    expect(textOf(res)).toContain('ping');
   });
 });

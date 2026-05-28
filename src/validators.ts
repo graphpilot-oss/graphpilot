@@ -194,19 +194,7 @@ export function validateGpCallers(input: unknown): Result<GpCallersArgs> {
 }
 
 // Tool name -> validator dispatcher (for the MCP server)
-export type ToolName = 'gp_index' | 'gp_recall' | 'gp_callers' | 'gp_impact' | 'gp_stats';
-
-export interface GpStatsArgs {
-  path?: string;
-}
-export function validateGpStats(input: unknown): Result<GpStatsArgs> {
-  if (!isPlainObject(input)) return fail('arguments must be an object');
-  const extras = rejectExtraKeys(input, ['path']);
-  if (!extras.ok) return fail(extras.error);
-  const path = pickString(input, 'path', { max: 1024 });
-  if (!path.ok) return fail(path.error);
-  return ok({ path: path.value });
-}
+export type ToolName = 'gp_index' | 'gp_recall' | 'gp_callers' | 'gp_impact';
 
 export interface GpImpactArgs {
   symbol: string;

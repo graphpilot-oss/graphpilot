@@ -4,38 +4,7 @@ import {
   validateGpRecall,
   validateGpCallers,
   validateGpImpact,
-  validateGpStats,
 } from '../src/validators.js';
-
-describe('validateGpStats', () => {
-  it('accepts empty object', () => {
-    expect(validateGpStats({})).toEqual({ ok: true, value: { path: undefined } });
-  });
-
-  it('accepts a path', () => {
-    expect(validateGpStats({ path: '/x' })).toEqual({
-      ok: true,
-      value: { path: '/x' },
-    });
-  });
-
-  it('rejects non-object', () => {
-    expect(validateGpStats('nope').ok).toBe(false);
-    expect(validateGpStats(42).ok).toBe(false);
-    expect(validateGpStats([]).ok).toBe(false);
-  });
-
-  it('rejects extra keys', () => {
-    const r = validateGpStats({ path: '/x', sneaky: true });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/sneaky/);
-  });
-
-  it('rejects non-string path', () => {
-    const r = validateGpStats({ path: 42 });
-    expect(r.ok).toBe(false);
-  });
-});
 
 describe('validateGpIndex', () => {
   it('accepts empty (path defaults to cwd later)', () => {

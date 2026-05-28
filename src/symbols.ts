@@ -89,6 +89,27 @@ function extractFromNode(node: Parser.SyntaxNode, parsed: ParsedFile, out: Symbo
       out.push(record(node, parsed, name, 'variable'));
       return;
     }
+    case 'function_expression': {
+      // Named function expression not assigned to a variable, e.g. `module.exports = function foo() {}`.
+      // The variable_declarator case already covers `const foo = function() {}`.
+      if (node.parent?.type === 'variable_declarator') return;
+      const name = node.childForFieldName('name')?.text;
+      if (!name) return;
+      out.push(record(node, parsed, name, 'function'));
+      return;
+    }
+    case 'pair': {
+      // Index `{ kFoo: Symbol('...') }` object-literal properties so gp_recall
+      // can find Symbol-keyed constants (common in JS codebases like fastify).
+      const valueNode = node.childForFieldName('value');
+      if (!valueNode || valueNode.type !== 'call_expression') return;
+      const fn = valueNode.childForFieldName('function');
+      if (!fn || fn.text !== 'Symbol') return;
+      const key = node.childForFieldName('key');
+      if (!key || key.type !== 'property_identifier') return;
+      out.push(record(node, parsed, key.text, 'variable'));
+      return;
+    }
     default:
       return;
   }
@@ -146,8 +167,6 @@ function record(
  * patterns (T3 defence) are redacted before the line is returned.
  */
 function oneLineSignature(node: Parser.SyntaxNode, source: string): string {
-  // For variable_declarator, climb to the parent lexical/var declaration so we
-  // capture "export const foo = ..." rather than just "foo = ...".
   let target: Parser.SyntaxNode = node;
   if (node.type === 'variable_declarator' && node.parent) {
     target = node.parent;

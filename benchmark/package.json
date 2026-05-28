@@ -1,0 +1,23 @@
+{
+  "name": "@graphpilot-oss/benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node_modules/.bin/tsx src/index.ts setup",
+    "generate": "node_modules/.bin/tsx src/index.ts generate",
+    "bench": "node_modules/.bin/tsx src/index.ts run",
+    "report": "node_modules/.bin/tsx src/index.ts report",
+    "all": "node_modules/.bin/tsx src/index.ts all",
+    "help": "node_modules/.bin/tsx src/index.ts help"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

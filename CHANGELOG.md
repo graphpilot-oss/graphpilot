@@ -32,13 +32,12 @@ Initial public release. GraphPilot is a local-first, refactor-safe code graph fo
 - JSON storage at `~/.graphpilot/<repo-id>/graph.json` (mode `0600`) with versioned schema and atomic writes.
 - Worktree-aware indexing: subdirectory invocations auto-resolve to the git worktree top, so two `git worktree add`-ed branches naturally produce two separate indexes. Opt out with `--no-worktree`.
 
-#### MCP server (five tools)
+#### MCP server (four tools)
 
 - `gp_index` — re-index a repo from inside the agent.
 - `gp_recall` — find symbols by name (exact case-insensitive by default, substring opt-in).
 - `gp_callers` — list callers or callees of a symbol, with a `direction` parameter.
 - `gp_impact` — blast-radius analysis: direct + transitive callers (BFS, depth 1–5), tests likely affected, public-API flag, summary stats. Accepts `since: <commit|tag|branch>` for PR-scoped impact via `isomorphic-git` (pure JS, no shell-out).
-- `gp_stats` — health probe: repo id, `indexedAt`, file/symbol/edge counts.
 
 #### Evidence anchors
 

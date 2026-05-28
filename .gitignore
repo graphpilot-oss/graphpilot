@@ -51,3 +51,6 @@ bench/results/bench-*.md
 # The rendered GIF (docs/press/hero.gif) IS committed.
 docs/press/hero.tape
 docs/press/*.tape
+
+agentdb.rvf
+agentdb.rvf.lock

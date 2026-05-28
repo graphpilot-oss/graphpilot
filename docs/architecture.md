@@ -194,7 +194,6 @@ MCP request → validator → tool handler → response
 | `gp_recall`  | `{ query, limit?, substring?, path? }`                                              | Symbols matching name (exact case-insensitive by default; `substring: true` opt-in)                                                 |
 | `gp_callers` | `{ symbol, direction?: 'callers' \| 'callees', limit?, includeUnresolved?, path? }` | Edges where the symbol is target (callers) or source (callees)                                                                      |
 | `gp_impact`  | `{ symbol, depth? (1–5, default 3), path? }`                                        | Blast-radius report: direct callers, transitive callers grouped by BFS depth, tests likely affected, public-API flag, summary stats |
-| `gp_stats`   | `{ path? }`                                                                         | Health check: repo id, indexedAt, file/symbol/edge counts                                                                           |
 
 Every input is validated by hand-rolled validators in
 [`src/validators.ts`](../src/validators.ts):

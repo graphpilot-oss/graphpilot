@@ -40,16 +40,24 @@ const FUNCTION_NODE_TYPES = new Set([
 ]);
 
 /**
- * Walk a function body, but stop descending into nested function definitions.
- * This way a call inside `(_ => foo())` placed inside `outer()` is attributed
- * to the arrow, not to `outer`. (When the arrow itself has a SymbolRecord —
- * because it was assigned to a const — we'll visit it separately.)
+ * Walk a function body, stopping at nested functions that are themselves named
+ * symbols (they'll be walked separately). Anonymous callbacks — arrow functions
+ * or function expressions passed directly as arguments — are walked through and
+ * their calls are attributed to the enclosing named function. This ensures that
+ * calls made inside `this.after(() => { foo() })` are attributed to the outer
+ * named function rather than silently lost.
  */
-function* walkBodyExcludingNestedFns(rootNode: Parser.SyntaxNode): Generator<Parser.SyntaxNode> {
+function* walkBodyExcludingNestedFns(
+  rootNode: Parser.SyntaxNode,
+  symByKey: Map<string, SymbolRecord>,
+): Generator<Parser.SyntaxNode> {
   const stack: { node: Parser.SyntaxNode; isRoot: boolean }[] = [{ node: rootNode, isRoot: true }];
   while (stack.length > 0) {
     const { node, isRoot } = stack.pop()!;
-    if (!isRoot && FUNCTION_NODE_TYPES.has(node.type)) continue;
+    if (!isRoot && FUNCTION_NODE_TYPES.has(node.type)) {
+      const key = nodeMatchKey(node);
+      if (key && symByKey.has(key)) continue;
+    }
     yield node;
     for (let i = node.childCount - 1; i >= 0; i--) {
       const child = node.child(i);
@@ -104,14 +112,19 @@ function nodeMatchKey(node: Parser.SyntaxNode): string | null {
     return `${node.startPosition.row + 1}:${name}`;
   }
   if (node.type === 'arrow_function' || node.type === 'function_expression') {
-    // We stored these under their variable name; the variable_declarator is
-    // the parent we need. The declarator's startLine matches the SymbolRecord
-    // line (we record the declarator, not the value).
     const parent = node.parent;
     if (parent?.type === 'variable_declarator') {
+      // `const foo = () => {}` — stored under the variable declarator's line.
       const name = parent.childForFieldName('name')?.text;
       if (!name) return null;
       return `${parent.startPosition.row + 1}:${name}`;
+    }
+    if (node.type === 'function_expression') {
+      // `module.exports = function foo() {}` — named function expression not
+      // assigned via variable_declarator; stored under its own name + line.
+      const name = node.childForFieldName('name')?.text;
+      if (!name) return null;
+      return `${node.startPosition.row + 1}:${name}`;
     }
   }
   return null;
@@ -142,7 +155,7 @@ export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[])
     const body = node.childForFieldName('body');
     if (!body) continue;
 
-    for (const sub of walkBodyExcludingNestedFns(body)) {
+    for (const sub of walkBodyExcludingNestedFns(body, symByKey)) {
       if (sub.type !== 'call_expression' && sub.type !== 'new_expression') {
         continue;
       }

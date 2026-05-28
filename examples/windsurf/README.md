@@ -47,7 +47,7 @@ Fully quit and reopen. The Cascade panel reads MCP config on launch.
 
 ## 4. Verify
 
-Open the **Cascade** panel — the MCP tools list should include the five `gp_*` tools (`gp_index`, `gp_recall`, `gp_callers`, `gp_impact`, `gp_stats`).
+Open the **Cascade** panel — the MCP tools list should include the four `gp_*` tools (`gp_index`, `gp_recall`, `gp_callers`, `gp_impact`).
 
 ## 5. Index a repo
 
