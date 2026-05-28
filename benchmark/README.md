@@ -68,10 +68,10 @@ pnpm bench -- --mode=gp
 
 Each task runs in two **isolated** modes against the same fastify codebase:
 
-| Mode           | Tools available                                                                                  |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| **Baseline**   | `read_file`, `list_directory` only                                                               |
-| **GraphPilot** | `read_file`, `list_directory` + `gp_recall`, `gp_callers`, `gp_callees`, `gp_impact`, `gp_stats` |
+| Mode           | Tools available                                                        |
+| -------------- | ---------------------------------------------------------------------- |
+| **Baseline**   | `read_file`, `list_directory` only                                     |
+| **GraphPilot** | `read_file`, `list_directory` + `gp_recall`, `gp_callers`, `gp_impact` |
 
 Same model, same system prompt, same question — the only difference is tool availability.
 

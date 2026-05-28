@@ -58,7 +58,7 @@ Post-npm:
 }
 ```
 
-> The `autoApprove` array lets you list tool names that Cline will call without per-call confirmation. Add e.g. `["gp_recall", "gp_stats"]` once you're comfortable — leave it empty until then.
+> The `autoApprove` array lets you list tool names that Cline will call without per-call confirmation. Add e.g. `["gp_recall"]` once you're comfortable — leave it empty until then.
 
 ## 4. Verify
 

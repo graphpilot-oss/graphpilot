@@ -136,12 +136,12 @@ describe.skipIf(shouldSkip)('MCP server over real stdio (subprocess)', () => {
       const replies = await d.awaitReplies(2);
       const list = replies[1];
       const names = (list.result?.tools ?? []).map((t: any) => t.name).sort();
-      expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall', 'gp_stats']);
+      expect(names).toEqual(['gp_callers', 'gp_impact', 'gp_index', 'gp_recall']);
 
       // Now call a tool — proves the process is still alive after tools/list
       d.send('tools/call', {
-        name: 'gp_stats',
-        arguments: { path: '/tmp/graphpilot-definitely-not-indexed' },
+        name: 'gp_recall',
+        arguments: { query: 'ping', path: '/tmp/graphpilot-definitely-not-indexed' },
       });
       const replies2 = await d.awaitReplies(3);
       const call = replies2[2];

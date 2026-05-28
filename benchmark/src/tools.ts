@@ -6,7 +6,7 @@ import { join, resolve, relative } from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 type Tool = Anthropic.Tool;
 import { FASTIFY_DIR } from './config.js';
-import { gpRecall, gpCallers, gpCallees, gpImpact, gpStats } from './gp.js';
+import { gpRecall, gpCallers, gpImpact } from './gp.js';
 
 const MAX_FILE_BYTES = 256 * 1024; // 256 KB cap per file read
 
@@ -72,20 +72,6 @@ const GP_CALLERS_DEF: Tool = {
   },
 };
 
-const GP_CALLEES_DEF: Tool = {
-  name: 'gp_callees',
-  description:
-    'Find all functions/methods that a given symbol calls. Returns callee names and locations.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      symbol: { type: 'string', description: 'Symbol name to find callees of.' },
-      limit: { type: 'number', description: 'Max results (default 30).' },
-    },
-    required: ['symbol'],
-  },
-};
-
 const GP_IMPACT_DEF: Tool = {
   name: 'gp_impact',
   description:
@@ -97,16 +83,6 @@ const GP_IMPACT_DEF: Tool = {
       depth: { type: 'number', description: 'BFS depth (default 3).' },
     },
     required: ['symbol'],
-  },
-};
-
-const GP_STATS_DEF: Tool = {
-  name: 'gp_stats',
-  description: 'Return index statistics: total symbols, edges, files indexed.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {},
-    required: [],
   },
 };
 
@@ -174,20 +150,12 @@ export function executeTool(
         bytesRead: 0,
         isFileRead: false,
       };
-    case 'gp_callees':
-      return {
-        text: gpCallees(String(args.symbol ?? ''), Number(args.limit ?? 30)),
-        bytesRead: 0,
-        isFileRead: false,
-      };
     case 'gp_impact':
       return {
         text: gpImpact(String(args.symbol ?? ''), Number(args.depth ?? 3)),
         bytesRead: 0,
         isFileRead: false,
       };
-    case 'gp_stats':
-      return { text: gpStats(), bytesRead: 0, isFileRead: false };
     default:
       return { text: `Unknown tool: ${name}`, bytesRead: 0, isFileRead: false };
   }
@@ -199,7 +167,5 @@ export const GP_TOOLS: Tool[] = [
   LIST_DIR_DEF,
   GP_RECALL_DEF,
   GP_CALLERS_DEF,
-  GP_CALLEES_DEF,
   GP_IMPACT_DEF,
-  GP_STATS_DEF,
 ];

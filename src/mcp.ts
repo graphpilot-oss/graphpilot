@@ -15,12 +15,10 @@ import {
   validateGpRecall,
   validateGpCallers,
   validateGpImpact,
-  validateGpStats,
   type GpRecallArgs,
   type GpCallersArgs,
   type GpImpactArgs,
   type GpIndexArgs,
-  type GpStatsArgs,
 } from './validators.js';
 import { withInteractionLog } from './interactions.js';
 import { analyzeImpact, type ImpactCaller, type ImpactResult } from './impact.js';
@@ -167,25 +165,10 @@ function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
 
 const TOOLS = [
   {
-    name: 'gp_stats',
-    description:
-      'Show index health: when last indexed, file/symbol/edge counts, branch + SHA. ' +
-      'ALWAYS call first if other gp_* tools return unexpected results — confirms ' +
-      'the index is fresh and identifies the exact commit it was built against. ' +
-      'Do NOT use to answer questions about code structure; use gp_recall or gp_impact for that.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: { type: 'string', description: PATH_FIELD_DESC },
-      },
-      additionalProperties: false,
-    },
-  },
-  {
     name: 'gp_index',
     description:
       'Re-index the repo after batch edits so subsequent gp_* calls see your changes. ' +
-      'Call after any non-trivial edit session or when gp_stats shows a stale timestamp. ' +
+      'Call after any non-trivial edit session. ' +
       'Do NOT call before every query — indexing is slow; only needed when source files changed.',
     inputSchema: {
       type: 'object',
@@ -321,33 +304,6 @@ interface ToolResult {
   text: string;
   results: number;
   isError?: boolean;
-}
-
-async function handleGpStats(args: GpStatsArgs): Promise<ToolResult> {
-  await ensureClientRootsCached();
-  const out = getOrLoadIndex(args.path);
-  if ('error' in out) {
-    return { text: out.error, results: 0, isError: true };
-  }
-  const { idx } = out;
-  const s = idx.stats;
-  const g = idx.graph;
-  // Git provenance — surface branch + short SHA so the agent can cite
-  // the exact commit the index was built against. Omitted gracefully
-  // when the indexed root isn't a git repo.
-  const gitLines: string[] = [];
-  if (g.indexedBranch) gitLines.push(`Branch:      ${g.indexedBranch}`);
-  if (g.indexedSha) gitLines.push(`Commit SHA:  ${g.indexedSha.slice(0, 7)}`);
-  const text = [
-    `Repo:        ${g.rootPath}`,
-    `Repo id:     ${g.repoId}`,
-    `Indexed at:  ${g.indexedAt}`,
-    ...gitLines,
-    `Files:       ${g.filesIndexed}`,
-    `Symbols:     ${s.symbols}`,
-    `Calls:       ${s.edges} (${s.resolvedEdges} resolved)`,
-  ].join('\n');
-  return { text, results: 1 };
 }
 
 async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
@@ -679,15 +635,6 @@ export function buildMcpServer(): Server {
       // Validate first
       let result: ToolResult;
       switch (name) {
-        case 'gp_stats': {
-          const v = validateGpStats(rawArgs);
-          if (!v.ok) {
-            result = { text: `Invalid input: ${v.error}`, results: 0, isError: true };
-            break;
-          }
-          result = await handleGpStats(v.value);
-          break;
-        }
         case 'gp_index': {
           const v = validateGpIndex(rawArgs);
           if (!v.ok) {

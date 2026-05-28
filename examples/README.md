@@ -76,7 +76,7 @@ After editing the config and **fully restarting** the client (quitting completel
 - **Windsurf:** Cascade panel → MCP tools
 - **Continue:** Settings → MCP Servers
 
-You should see `graphpilot` with **5 tools** (`gp_index`, `gp_recall`, `gp_callers`, `gp_impact`, `gp_stats`). If not, see [`docs/mcp-setup.md`](../docs/mcp-setup.md#troubleshooting).
+You should see `graphpilot` with **4 tools** (`gp_index`, `gp_recall`, `gp_callers`, `gp_impact`). If not, see [`docs/mcp-setup.md`](../docs/mcp-setup.md#troubleshooting).
 
 ## Indexing your first repo
 
@@ -99,7 +99,7 @@ Watch mode produces sub-10 ms incremental updates on every save. The on-disk `gr
 From inside the agent:
 
 ```text
-Use graphpilot's gp_stats tool to show the index for this repo.
+Use graphpilot's gp_recall tool to list symbols in this repo.
 ```
 
-If the response includes a repo id, file/symbol/edge counts, and an `indexedAt` timestamp — the wire is healthy.
+If the response includes symbol results — the wire is healthy.

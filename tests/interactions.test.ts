@@ -116,7 +116,7 @@ describe('logInteraction', () => {
   it('writes the log file with mode 0600', { skip: isWindows }, () => {
     logInteraction(fakeRepoRoot, {
       ts: '2026-05-17T20:00:00Z',
-      tool: 'gp_stats',
+      tool: 'gp_recall',
       input: {},
       results: 1,
       durationMs: 1,
@@ -129,7 +129,7 @@ describe('logInteraction', () => {
     process.env.GRAPHPILOT_NO_LOG = '1';
     logInteraction(fakeRepoRoot, {
       ts: '2026-05-17T20:00:00Z',
-      tool: 'gp_stats',
+      tool: 'gp_recall',
       input: {},
       results: 1,
       durationMs: 1,
@@ -168,7 +168,7 @@ describe('logInteraction — log rotation', () => {
   function triggerLog(repoRoot: string): void {
     logInteraction(repoRoot, {
       ts: new Date().toISOString(),
-      tool: 'gp_stats',
+      tool: 'gp_recall',
       input: {},
       results: 1,
       durationMs: 1,

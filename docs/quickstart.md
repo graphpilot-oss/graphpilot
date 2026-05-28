@@ -105,8 +105,8 @@ Once v0.1.0 ships to npm, you can simplify to:
 ```
 
 **Restart Claude Code fully** (quit, don't just close the window). Then
-type `/mcp` — `graphpilot` should appear with **5 tools** (gp_index,
-gp_recall, gp_callers, gp_impact, gp_stats).
+type `/mcp` — `graphpilot` should appear with **4 tools** (gp_index,
+gp_recall, gp_callers, gp_impact).
 
 For Cursor / Cline / Windsurf / Continue, see
 [mcp-setup.md](mcp-setup.md).

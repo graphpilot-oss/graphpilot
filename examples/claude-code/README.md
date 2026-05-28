@@ -61,7 +61,7 @@ You should see:
 
 ```
 graphpilot
-  5 tools: gp_index, gp_recall, gp_callers, gp_impact, gp_stats
+  4 tools: gp_index, gp_recall, gp_callers, gp_impact
 ```
 
 If the server doesn't appear, run `node /abs/path/to/graphpilot/dist/cli.js mcp` in a terminal and check stderr for the error — most config bugs surface immediately.

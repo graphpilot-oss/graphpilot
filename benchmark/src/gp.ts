@@ -114,21 +114,6 @@ export function gpCallers(symbolName: string, limit = 30): string {
   return lines.join('\n');
 }
 
-export function gpCallees(symbolName: string, limit = 30): string {
-  const idx = getIndex();
-  const symbols = idx.findByName(symbolName, { limit: 5, substring: true });
-  if (!symbols.length) return `No symbol named "${symbolName}" found.`;
-  const sym = symbols[0];
-  const edges = idx.callees(sym.id, { limit });
-  if (!edges.length) return `"${sym.name}" makes no tracked calls.`;
-
-  const lines = [`Callees of \`${sym.name}\` (${edges.length} found):`];
-  for (const e of edges) {
-    lines.push(`  → ${e.toName ?? '?'}  (${e.file}:${e.line})`);
-  }
-  return lines.join('\n');
-}
-
 export function gpImpact(symbolName: string, depth = 3): string {
   const idx = getIndex();
   const result = analyzeImpact(idx, symbolName, { depth });
@@ -157,17 +142,4 @@ export function gpImpact(symbolName: string, depth = 3): string {
   }
   lines.push(`  Exported: ${result.publicApi.exported}`);
   return lines.join('\n');
-}
-
-export function gpStats(): string {
-  const idx = getIndex();
-  const g = idx.graph;
-  return [
-    `GraphPilot index stats for fastify:`,
-    `  Symbols  : ${g.symbolCount}`,
-    `  Edges    : ${g.edgeCount}`,
-    `  Files    : ${g.filesIndexed}`,
-    `  Indexed  : ${g.indexedAt}`,
-    `  Root     : ${g.rootPath}`,
-  ].join('\n');
 }

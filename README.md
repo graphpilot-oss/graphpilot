@@ -128,7 +128,7 @@ GraphPilot speaks MCP over stdio. Add this server entry to your agent's MCP conf
 
 Where this file lives depends on the client (`~/.cursor/mcp.json`, `~/.claude.json`, Cline's settings panel, etc.). Pre-made configs with the exact file path for each agent are in [`examples/`](examples/) — copy the one for your client.
 
-Restart the agent. It now has five new tools: `gp_recall`, `gp_callers`, `gp_impact`, `gp_index`, `gp_stats` — see [The five tools](#the-five-tools) below for what each one does and when the agent should reach for it.
+Restart the agent. It now has four new tools: `gp_recall`, `gp_callers`, `gp_impact`, `gp_index` — see [The four tools](#the-four-tools) below for what each one does and when the agent should reach for it.
 
 **4. Try it**
 
@@ -218,13 +218,6 @@ Use this after the agent (or the user) has made a batch of structural edits and 
 - **Returns:** re-indexes the repo and invalidates the per-path query cache.
 - **Pairs with:** `graphpilot watch` for sub-10 ms incremental updates between explicit re-indexes.
 
-### `gp_stats` — index health probe
-
-Use this as a smoke test: "is the index alive? when was it last refreshed?"
-
-- **Input:** `{ path? }`
-- **Returns:** repo id, `indexedAt`, file/symbol/edge counts, indexed branch + sha when available.
-
 ## How it works
 
 ```
@@ -286,14 +279,13 @@ Full pipeline writeup with file references: [`docs/architecture.md`](docs/archit
 
 ## When to use which tool
 
-| If the agent is about to…                          | Reach for…                     | Why                                                   |
-| -------------------------------------------------- | ------------------------------ | ----------------------------------------------------- |
-| `grep` for a function by name                      | `gp_recall`                    | One call, no false positives from comments or strings |
-| Read 20 files looking for "who calls X"            | `gp_callers`                   | Pre-computed reverse index, sub-millisecond           |
-| Plan a rename or signature change                  | `gp_impact`                    | Direct + transitive + tests + public-API in one call  |
-| Review a PR's structural blast radius              | `gp_impact({ since: 'main' })` | Differential — only callers your branch touches       |
-| Re-grep after editing several files                | `gp_index`                     | Incremental: lets the next call see your edits        |
-| Sanity-check whether the index is loaded and fresh | `gp_stats`                     | One-liner health probe                                |
+| If the agent is about to…               | Reach for…                     | Why                                                   |
+| --------------------------------------- | ------------------------------ | ----------------------------------------------------- |
+| `grep` for a function by name           | `gp_recall`                    | One call, no false positives from comments or strings |
+| Read 20 files looking for "who calls X" | `gp_callers`                   | Pre-computed reverse index, sub-millisecond           |
+| Plan a rename or signature change       | `gp_impact`                    | Direct + transitive + tests + public-API in one call  |
+| Review a PR's structural blast radius   | `gp_impact({ since: 'main' })` | Differential — only callers your branch touches       |
+| Re-grep after editing several files     | `gp_index`                     | Incremental: lets the next call see your edits        |
 
 For string literals, error messages, config values, or anything in a language other than TS/JS: **stay with grep.** GraphPilot indexes code structure, not text.
 

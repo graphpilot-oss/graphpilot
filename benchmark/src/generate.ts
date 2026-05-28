@@ -7,7 +7,7 @@ import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import { ANTHROPIC_API_KEY, MODEL, FASTIFY_DIR, TASKS_FILE } from './config.js';
-import { gpRecall, gpCallers, gpImpact, gpStats, getIndex } from './gp.js';
+import { gpRecall, gpCallers, gpImpact, getIndex } from './gp.js';
 import type { Task, TaskType } from './types.js';
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
