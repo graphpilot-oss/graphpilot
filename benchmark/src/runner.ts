@@ -82,6 +82,14 @@ export async function runTask(task: Task, mode: 'baseline' | 'gp'): Promise<Task
     }
   }
 
+  if (!answer) {
+    const lastTools = toolCalls
+      .slice(-3)
+      .map((t) => t.name)
+      .join(', ');
+    answer = `(No answer produced within ${MAX_TOOL_TURNS} turns. Last tools: ${lastTools || 'none'})`;
+  }
+
   const peakHeapMb = (process.memoryUsage().heapUsed - startMem) / 1024 / 1024;
   const durationMs = Date.now() - startTime;
   const { correct, score: scoreVal } = score(answer, task.expectedKeywords);
