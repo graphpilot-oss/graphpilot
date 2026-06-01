@@ -59,18 +59,6 @@ GraphPilot ships as a single npm package (`@graphpilot-oss/graphpilot`) with two
   <img src="docs/diagrams/data-flow.svg" alt="GraphPilot data flow: you run index/watch to build ~/.graphpilot/<repo>/graph.json; the read-only graphpilot mcp server reads it and serves your coding agent over stdio JSON-RPC" width="720" />
 </p>
 
-<details>
-<summary>Text version</summary>
-
-```
-   you ── graphpilot index/watch ──►  ~/.graphpilot/<repo>/graph.json
-                                                  │
-                                                  ▼
-   coding agent ◄── stdio JSON-RPC ── graphpilot mcp ── reads graph
-```
-
-</details>
-
 If you only want CLI access to your code graph (no agent), run `graphpilot index` and then `graphpilot stats` / inspect `graph.json` directly. If you only want the agent integration, you still need to run `graphpilot index` once — the MCP server is read-only against the on-disk graph.
 
 ## What makes it different
@@ -229,58 +217,9 @@ Use this after the agent (or the user) has made a batch of structural edits and 
 
 ## How it works
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│                  Your TypeScript / JS repo                     │
-└──────────────────────────────┬─────────────────────────────────┘
-                               │
-                ┌──────────────▼──────────────┐
-                │  indexer.ts                 │
-                │  walk dir · skip ignores ·  │
-                │  symlink-safe · 50k cap     │
-                └──────────────┬──────────────┘
-                               │
-                ┌──────────────▼──────────────┐
-                │  parser.ts                  │
-                │  tree-sitter → AST          │
-                │  5 MB cap · iterative walk  │
-                └──────────────┬──────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            │                                     │
-   ┌────────▼────────┐                   ┌────────▼────────┐
-   │  symbols.ts     │                   │  edges.ts       │
-   │  funcs · classes│                   │  call sites +   │
-   │  methods · ifs  │                   │  resolver       │
-   │  types · enums  │                   │ (same-file→glb) │
-   └────────┬────────┘                   └────────┬────────┘
-            │                                     │
-            └──────────────────┬──────────────────┘
-                               │
-                ┌──────────────▼──────────────┐
-                │  storage.ts                 │
-                │  ~/.graphpilot/<repo-id>/   │
-                │  graph.json · mode 0600     │
-                └──────────────┬──────────────┘
-                               │
-                ┌──────────────▼──────────────┐
-                │  query.ts (GraphIndex)      │
-                │  byName · byId · callers ·  │
-                │  callees — sub-ms lookups   │
-                └──────────────┬──────────────┘
-                               │
-                ┌──────────────▼──────────────┐
-                │  mcp.ts                     │
-                │  4 tools · stdio JSON-RPC   │
-                └──────────────┬──────────────┘
-                               │
-                       [MCP protocol]
-                               │
-                ┌──────────────▼──────────────┐
-                │  Claude Code · Cursor ·     │
-                │  Cline · Windsurf · …       │
-                └─────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/diagrams/how-it-works.svg" alt="How GraphPilot works, in two phases. Build time (CLI index/watch): your repo flows through indexer.ts, parser.ts, and symbols.ts + edges.ts, which storage.ts writes to graph.json at ~/.graphpilot/<repo-id>/ (mode 0600). Serve time (read-only MCP server): query.ts reads graph.json, mcp.ts exposes 4 tools over stdio JSON-RPC with evidence anchors, served to Claude Code, Cursor, Cline, Windsurf, and Continue." width="760" />
+</p>
 
 Data flow is one-way: source → tree → symbols + edges → JSON → query → agent. GraphPilot never modifies your code.
 
