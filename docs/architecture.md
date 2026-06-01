@@ -28,6 +28,13 @@ excerpt}` to every symbol and call edge in tool output. The git SHA is
 
 ## Top-level view
 
+<p align="center">
+  <img src="diagrams/architecture-pipeline.svg" alt="GraphPilot indexing pipeline: your repo flows through indexer.ts, parser.ts, then splits into symbols.ts and edges.ts, merges into storage.ts (graph.json), then query.ts (GraphIndex) and mcp.ts, served over the MCP protocol to Claude Code, Cursor, Cline, Windsurf, and Continue" width="760" />
+</p>
+
+<details>
+<summary>Text version</summary>
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Your TypeScript / JS repo                        │
@@ -71,7 +78,7 @@ excerpt}` to every symbol and call edge in tool output. The git SHA is
                                     │
                   ┌─────────────────▼──────────────────┐
                   │  mcp.ts                            │
-                  │  5 tools over stdio JSON-RPC       │
+                  │  4 tools over stdio JSON-RPC       │
                   │  validators.ts + interactions log  │
                   └─────────────────┬──────────────────┘
                                     │
@@ -82,6 +89,8 @@ excerpt}` to every symbol and call edge in tool output. The git SHA is
                   │  Windsurf / Continue / ...         │
                   └────────────────────────────────────┘
 ```
+
+</details>
 
 Data flow is one-way: source → tree → symbols + edges → JSON → query →
 agent. Nothing flows back. GraphPilot never modifies your code.
@@ -186,7 +195,7 @@ MCP request → validator → tool handler → response
                          interaction log
 ```
 
-## The five MCP tools
+## The four MCP tools
 
 | Tool         | Input                                                                               | Output                                                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

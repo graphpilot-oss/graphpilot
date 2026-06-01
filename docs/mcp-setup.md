@@ -78,7 +78,7 @@ hot-reload — you must relaunch.
 ```
 
 **Verify:** Settings → MCP — `graphpilot` should show as **Connected**
-with 5 tools listed underneath.
+with 4 tools listed underneath.
 
 **Common gotcha:** Cursor sometimes caches MCP server state. If the
 server shows red after a config change, click the refresh icon next to
@@ -183,7 +183,7 @@ Generic pattern works anywhere the client supports stdio MCP:
 npx @modelcontextprotocol/inspector node dist/cli.js mcp
 ```
 
-Opens a browser-based UI listing the 5 tools with their schemas. Lets
+Opens a browser-based UI listing the 4 tools with their schemas. Lets
 you fire a test call and see the JSON-RPC frames.
 
 ---
