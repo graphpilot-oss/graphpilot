@@ -19,7 +19,7 @@
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> ·
-  <a href="#the-five-tools">Tools</a> ·
+  <a href="#the-four-tools">Tools</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#editor-setup">Editor setup</a> ·
   <a href="docs/limitations.md">Limitations</a> ·
@@ -55,12 +55,21 @@ GraphPilot ships as a single npm package (`@graphpilot-oss/graphpilot`) with two
 
 **The flow:** the **CLI** builds the index once (and `watch` keeps it warm). The **MCP server** is what your coding agent talks to — you never invoke it yourself, you just point your agent's MCP config at `graphpilot mcp` once and the agent spawns it on every session.
 
+<p align="center">
+  <img src="docs/diagrams/data-flow.svg" alt="GraphPilot data flow: you run index/watch to build ~/.graphpilot/<repo>/graph.json; the read-only graphpilot mcp server reads it and serves your coding agent over stdio JSON-RPC" width="720" />
+</p>
+
+<details>
+<summary>Text version</summary>
+
 ```
    you ── graphpilot index/watch ──►  ~/.graphpilot/<repo>/graph.json
                                                   │
                                                   ▼
    coding agent ◄── stdio JSON-RPC ── graphpilot mcp ── reads graph
 ```
+
+</details>
 
 If you only want CLI access to your code graph (no agent), run `graphpilot index` and then `graphpilot stats` / inspect `graph.json` directly. If you only want the agent integration, you still need to run `graphpilot index` once — the MCP server is read-only against the on-disk graph.
 
@@ -162,9 +171,9 @@ graphpilot init --dry-run        # preview without writing
 
 Full 5-minute walkthrough with screenshots: [`docs/quickstart.md`](docs/quickstart.md).
 
-## The five tools
+## The four tools
 
-GraphPilot exposes five MCP tools. Each one answers a structural question your agent would otherwise solve by grepping and reading files.
+GraphPilot exposes four MCP tools. Each one answers a structural question your agent would otherwise solve by grepping and reading files.
 
 ### `gp_recall` — find a symbol by name
 
@@ -262,7 +271,7 @@ Use this after the agent (or the user) has made a batch of structural edits and 
                                │
                 ┌──────────────▼──────────────┐
                 │  mcp.ts                     │
-                │  5 tools · stdio JSON-RPC   │
+                │  4 tools · stdio JSON-RPC   │
                 └──────────────┬──────────────┘
                                │
                        [MCP protocol]
