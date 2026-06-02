@@ -56,7 +56,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
       vite:
-        specifier: ^6.4.3
+        specifier: ^6.4.2
         version: 6.4.3(@types/node@22.19.19)(tsx@4.22.1)
       vitest:
         specifier: ^4.1.8
