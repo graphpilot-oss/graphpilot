@@ -266,18 +266,6 @@ GraphPilot is **local-first by promise and by build gate**.
 
 Threat model and per-defence test references live in [`docs/architecture.md`](docs/architecture.md). Report security issues per [`SECURITY.md`](SECURITY.md).
 
-## Vs alternatives
-
-| Tool               | Branch-aware | Evidence anchors | Local-first | Languages    |
-| ------------------ | ------------ | ---------------- | ----------- | ------------ |
-| **GraphPilot**     | ✅           | ✅               | ✅          | TS/JS        |
-| CodeGraphContext   | ❌           | ❌               | ✅          | TS/JS/Python |
-| Serena             | ❌           | ❌               | ✅          | Multi        |
-| Sourcegraph (SaaS) | ⚠ partial    | ✅               | ❌          | Multi        |
-| Plain grep + read  | n/a          | ❌               | ✅          | All          |
-
-GraphPilot is not trying to be the universal code-graph. It's trying to be the one that makes refactors in TypeScript/JavaScript repos **safe to delegate to an agent** — which means branch awareness and verifiable citations are non-negotiable.
-
 ## Limitations
 
 GraphPilot v0.1 makes deliberate trade-offs to ship small and sharp:
@@ -327,4 +315,4 @@ Found a security issue? Please follow [`SECURITY.md`](SECURITY.md) instead of op
 
 ## License
 
-[Apache-2.0](LICENSE). Copyright 2026 Akshay Sharma.
+[Apache-2.0](LICENSE). Copyright 2026 Akshay Sharma — [codewithakki@gmail.com](mailto:codewithakki@gmail.com)
