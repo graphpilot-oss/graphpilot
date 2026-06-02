@@ -54,3 +54,9 @@ docs/press/*.tape
 
 agentdb.rvf
 agentdb.rvf.lock
+
+# demo recording artifacts (root-level) — local only
+/demo.tape
+/demo.gif
+/gp
+/try-graphpilot.mts
