@@ -8,6 +8,14 @@ Coding agents burn tokens re-reading files to answer structural questions ("who 
 
 If the numbers in this README ever stop matching the code, that's a bug — file an issue.
 
+> **Two benchmarks, two questions.** This harness measures tool **correctness**
+> (F1 vs grep) and **scale** (throughput + query latency on a large repo). The
+> headline campaign number — **61 % fewer tokens / $5.20 saved per session** —
+> comes from a separate **real-LLM** benchmark (claude-sonnet-4-5 answering 40
+> questions on fastify, with vs without GraphPilot): see
+> [`../benchmark/README.md`](../benchmark/README.md). They corroborate each
+> other; neither replaces the other.
+
 ## Quick start
 
 **Prerequisites**: Node.js 18+, `pnpm` 9+, a clean clone of the GraphPilot repo.
