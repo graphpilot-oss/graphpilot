@@ -40,7 +40,9 @@ The problem it solves: agents burn tokens, hallucinate function names, and miss 
 
 **Token cost drops. Hallucinations drop. Refactors get safer.**
 
-On 10 standardized structural questions, GraphPilot reaches **F1 0.89 vs grep's 0.42** while the agent reads **99.9 % fewer bytes** (721 B vs 528 KB) to reach the same conclusion. The same byte-cost reduction holds at scale: indexing **microsoft/TypeScript** (601 files, 17 k symbols, 70 k call edges in 10 s) gives **sub-millisecond queries** and a **99.99 % bytes-read reduction vs grep** on the compiler's hottest symbols. [Reproduce in 30 seconds →](bench/README.md)
+Put a real coding agent (claude-sonnet-4-5) on **40 structural questions about fastify** — a ~300-file Node.js framework — and give it nothing but file reads. Then hand it GraphPilot's four tools and ask the same 40. The agent with GraphPilot uses **61 % fewer tokens**, costs **$3.68 instead of $8.88 — $5.20 saved per session** — and gets **more** of them right, not fewer (37 correct vs 33). Same model, same questions, same repo; the only change is whether the structural index is there. [Reproduce it →](benchmark/README.md)
+
+A separate correctness benchmark backs the savings with precision: on 10 standardized structural queries GraphPilot scores **F1 0.89 vs grep's 0.42** while reading **99.9 % fewer bytes** (721 B vs 528 KB), and the byte-cost win holds at scale — indexing **microsoft/TypeScript** (601 files, 17 k symbols, 70 k call edges in 10 s) gives **sub-millisecond queries** and a **99.99 % bytes-read reduction**. [Full methodology →](bench/README.md)
 
 ## One binary, two modes
 

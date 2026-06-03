@@ -6,6 +6,32 @@ available vs falling back to raw file reads only. Runs against **fastify v4.28.1
 
 ---
 
+## Headline result
+
+Latest run: 2026-05-28, claude-sonnet-4-5, fastify v4.28.1, 40 questions. Same
+model, same questions, same repo in both modes — the only variable is whether
+GraphPilot's tools are available.
+
+| Metric            | Baseline (file reads only) | With GraphPilot | Delta              |
+| ----------------- | -------------------------: | --------------: | ------------------ |
+| Total tokens      |                  2,796,760 |       1,088,276 | **−61 %**          |
+| Cost (sonnet-4-5) |                      $8.88 |           $3.68 | **−$5.20 (−59 %)** |
+| Files read        |                        158 |              72 | −54 %              |
+| Correct answers   |                  33 / 39\* |         37 / 40 | **+4**             |
+
+\*Baseline task T31 crashed mid-run, so baseline correctness is measured over 39 tasks.
+
+Savings concentrate where agents waste the most: **"who calls X?" −82 %**,
+**"what breaks if I change X?" −73 %**. Trace and dependency questions are
+roughly cost-neutral — GraphPilot orients the agent but it still reads code to
+trace flow, and the benchmark reports that honestly rather than hiding it.
+
+> This is the real-LLM token-savings benchmark. For tool **correctness** (F1 vs
+> grep) and **scale** (microsoft/TypeScript throughput + latency), see
+> [`../bench/README.md`](../bench/README.md) — a separate, complementary harness.
+
+---
+
 ## Quick start
 
 ```bash
