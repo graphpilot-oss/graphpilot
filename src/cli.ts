@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-import { resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { indexDirectory } from './indexer.js';
 import { saveGraph, loadGraph, graphPath, repoIdFor, type Graph } from './storage.js';
 import { validateRootPath } from './validation.js';
@@ -15,6 +17,7 @@ Usage:
   graphpilot watch <path>     Watch the repo and update the index on save
   graphpilot mcp              Start the MCP server (stdio)
   graphpilot init             Drop routing-rules files for detected editors
+  graphpilot version          Print the installed version
   graphpilot help             Show this help
 
 Examples:
@@ -110,9 +113,28 @@ function cmdStatus(pathArg: string): number {
   return 0;
 }
 
+function getVersion(): string {
+  // dist/cli.js and src/cli.ts both sit one level under the package root,
+  // so ../package.json resolves in both the built and dev layouts.
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8')) as {
+      version?: string;
+    };
+    return pkg.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
   switch (cmd) {
+    case 'version':
+    case '--version':
+    case '-v':
+      process.stdout.write(`${getVersion()}\n`);
+      return 0;
     case 'index': {
       const noWorktree = rest.includes('--no-worktree');
       const path = rest.find((a) => !a.startsWith('--')) ?? '.';
