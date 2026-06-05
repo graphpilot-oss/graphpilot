@@ -1,0 +1,20 @@
+# Build the image's own native addons — never copy host-arch node_modules in.
+node_modules
+**/node_modules
+dist
+**/dist
+
+# VCS + local state
+.git
+.gitignore
+
+# Private planning notes (gitignored, but keep them out of any build context too)
+.notes
+.graphpilot
+
+# Tooling / artifacts
+coverage
+*.log
+.DS_Store
+.vscode
+.idea
