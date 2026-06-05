@@ -8,8 +8,9 @@
 #
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
 
-# Default: solo maintainer reviews everything.
-*       @codeakki
+# Default: either maintainer can review. A single code-owner approval
+# (from @codeakki OR @kavishshahh) satisfies the required review.
+*       @codeakki @kavishshahh
 
 # When co-maintainers join, add area-specific rules. For example:
 #
