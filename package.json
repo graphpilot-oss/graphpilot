@@ -5,6 +5,7 @@
   },
   "version": "1.0.0",
   "description": "Structural memory for coding agents.",
+  "mcpName": "io.github.graphpilot-oss/graphpilot",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

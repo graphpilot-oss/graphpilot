@@ -1,0 +1,37 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.graphpilot-oss/graphpilot",
+  "title": "GraphPilot",
+  "description": "Structural memory for coding agents: callers, callees, blast radius and symbols over MCP.",
+  "websiteUrl": "https://github.com/graphpilot-oss/graphpilot#readme",
+  "repository": {
+    "url": "https://github.com/graphpilot-oss/graphpilot",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@graphpilot-oss/graphpilot",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "valueHint": "subcommand"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "GRAPHPILOT_ROOT",
+          "description": "Absolute path to the repository GraphPilot should index and serve. Optional — falls back to the MCP client's workspace root or a parent-directory walk.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
