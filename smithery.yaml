@@ -1,0 +1,17 @@
+# Smithery configuration — https://smithery.ai/docs/build/project-config
+# GraphPilot is a local-first stdio MCP server: it runs on the user's machine
+# via npx and indexes their local repo. It is NOT a remotely-hosted server.
+
+startCommand:
+  type: stdio
+  # GraphPilot needs no API keys or config — it reads the local filesystem only.
+  configSchema:
+    type: object
+    properties: {}
+    additionalProperties: false
+  # Tells Smithery how to launch the server on the user's machine.
+  commandFunction: |-
+    () => ({
+      command: 'npx',
+      args: ['-y', '@graphpilot-oss/graphpilot', 'mcp']
+    })
