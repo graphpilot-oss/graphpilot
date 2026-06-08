@@ -192,10 +192,22 @@ async function main(): Promise<number> {
       await runInit({ repoPath, clients, all: allFlag, dryRun });
       return 0;
     }
+    case undefined: {
+      // Some MCP hosts and directory inspectors (Glama, registry scanners)
+      // launch the bin with no subcommand and drive it over a stdio pipe,
+      // expecting it to *be* the MCP server. Detect that (stdin is not a
+      // TTY) and start the server. A human running `graphpilot` in a
+      // terminal still gets the help text below.
+      if (!process.stdin.isTTY) {
+        await startMcpServer();
+        return 0;
+      }
+      process.stdout.write(HELP);
+      return 0;
+    }
     case 'help':
     case '--help':
     case '-h':
-    case undefined:
       process.stdout.write(HELP);
       return 0;
     default:
