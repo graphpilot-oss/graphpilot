@@ -386,3 +386,31 @@ describe('GraphWatcher — POSIX path normalization', () => {
     expect(w.currentGraph.symbols.some((s) => s.name === 'gone')).toBe(false);
   });
 });
+
+describe('GraphWatcher — incremental name index (issue #28)', () => {
+  it('re-resolves edges correctly after a callee is renamed', async () => {
+    // a.ts defines `target` and calls it at module scope; b.ts also calls it.
+    writeFileSync(join(workDir, 'a.ts'), 'export function target() {}\ntarget();\n');
+    writeFileSync(join(workDir, 'b.ts'), "import { target } from './a';\ntarget();\n");
+
+    const w = new GraphWatcher(workDir, { log: silentLog() });
+    await w.fullReindex();
+
+    const resolvedTo = (name: string) =>
+      w.currentGraph.edges.filter((e) => e.toName === name && e.toId !== null).length;
+    expect(resolvedTo('target')).toBe(2);
+
+    // Rename the definition: target -> renamed. The incrementally-maintained
+    // index must drop the stale `target` entry and add `renamed`, so b.ts's
+    // call to `target` resolves to nothing (no such symbol remains).
+    writeFileSync(join(workDir, 'a.ts'), 'export function renamed() {}\nrenamed();\n');
+    await w.applyUpdate(join(workDir, 'a.ts'), 'change');
+
+    const renamedEdge = w.currentGraph.edges.find((e) => e.toName === 'renamed');
+    expect(renamedEdge?.toId).toContain('a.ts#renamed');
+    const bTargetEdge = w.currentGraph.edges.find(
+      (e) => e.toName === 'target' && e.file === 'b.ts',
+    );
+    expect(bTargetEdge?.toId).toBeNull();
+  });
+});

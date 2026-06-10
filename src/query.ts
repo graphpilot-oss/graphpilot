@@ -44,6 +44,9 @@ export class GraphIndex {
   constructor(public readonly graph: Graph) {
     for (const s of graph.symbols) {
       this.byId.set(s.id, s);
+      // Synthetic <module> scope symbols are addressable by id (so callers
+      // display can name them) but must never surface in a name search.
+      if (s.kind === 'module') continue;
       const key = s.name.toLowerCase();
       const list = this.byNameLower.get(key);
       if (list) list.push(s);

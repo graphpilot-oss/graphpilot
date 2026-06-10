@@ -9,7 +9,12 @@ export type SymbolKind =
   | 'interface'
   | 'type'
   | 'variable'
-  | 'enum';
+  | 'enum'
+  // Synthetic per-file scope. Lets module-level / top-level calls have a valid
+  // `fromId` so `gp_callers` can attribute them (see edges.ts). Never emitted by
+  // extractSymbols directly — synthesized in extractRawCalls when a file has
+  // calls outside any named function.
+  | 'module';
 
 export interface SymbolRecord {
   id: string;

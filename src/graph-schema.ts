@@ -32,6 +32,7 @@ const VALID_SYMBOL_KINDS: readonly SymbolKind[] = [
   'type',
   'variable',
   'enum',
+  'module',
 ];
 
 // Caps. Match the agent-output sanitizer thresholds in interactions.ts.
@@ -135,7 +136,15 @@ function validateEdge(raw: unknown, ctx: ValidationContext): CallEdge | null {
     return null;
   }
 
-  return { fromId, toId, toName, file, line, column };
+  const edge: CallEdge = { fromId, toId, toName, file, line, column };
+  // Optional ambiguity signal (issue #18) — preserve when present and well-typed.
+  if (raw.ambiguous === true) {
+    edge.ambiguous = true;
+    if (isFiniteNumber(raw.candidateCount) && raw.candidateCount > 1) {
+      edge.candidateCount = raw.candidateCount;
+    }
+  }
+  return edge;
 }
 
 /**

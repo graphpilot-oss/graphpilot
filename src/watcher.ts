@@ -21,7 +21,13 @@ import { realpathSync, statSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 import { parseFile } from './parser.js';
 import { extractSymbols, type SymbolRecord } from './symbols.js';
-import { extractRawCalls, resolveCallEdges, type RawCall, type CallEdge } from './edges.js';
+import {
+  extractRawCalls,
+  resolveCallEdges,
+  buildNameIndex,
+  type RawCall,
+  type CallEdge,
+} from './edges.js';
 import { saveGraph, loadGraph, repoIdFor, graphPath, type Graph } from './storage.js';
 import { readGitInfo } from './git.js';
 import { indexDirectory } from './indexer.js';
@@ -83,6 +89,14 @@ export class GraphWatcher {
   readonly absRoot: string;
   private graph: Graph;
   private rawCalls: RawCall[];
+  /**
+   * Name→symbols inverted index, maintained incrementally so the per-save
+   * resolver step costs O(symbols-in-changed-file) instead of rebuilding the
+   * whole table on every keystroke (issue #28). Kept in lockstep with
+   * `this.graph.symbols`: full rebuilds on load/reindex/drift, surgical
+   * add/remove on each file event.
+   */
+  private byName: Map<string, SymbolRecord[]> = new Map();
   private watcher: FSWatcher | null = null;
   private readonly log: (line: string) => void;
   private readonly awaitStabilityMs: number;
@@ -137,6 +151,7 @@ export class GraphWatcher {
       };
       this.rawCalls = [];
     }
+    this.byName = buildNameIndex(this.graph.symbols);
   }
 
   /** Build a one-shot full index if no graph exists, then start the watcher. */
@@ -201,6 +216,7 @@ export class GraphWatcher {
     const edgesBefore = this.graph.edges.length;
 
     // 1. Remove existing symbols + raw calls from this file
+    const oldFileSymbols = this.graph.symbols.filter((s) => s.file === rel);
     const keptSymbols = this.graph.symbols.filter((s) => s.file !== rel);
     const keptRawCalls = this.rawCalls.filter((c) => c.file !== rel);
 
@@ -209,6 +225,7 @@ export class GraphWatcher {
     if (!parsed) {
       // Could not parse (too large, unknown ext, gone, etc.) — treat as a
       // deletion of that file's contribution. Keeps the index honest.
+      this.removeFromIndex(oldFileSymbols);
       this.commitState(keptSymbols, keptRawCalls);
       const result = this.finalize(rel, kind, symbolsBefore, edgesBefore, start);
       this.log(
@@ -236,7 +253,12 @@ export class GraphWatcher {
     const newSymbols = [...keptSymbols, ...fileSymbols];
     const newRawCalls = [...keptRawCalls, ...fileCalls];
 
-    // 4. Re-resolve every edge against the new symbol table. Cheap.
+    // 4. Update the inverted index in place (issue #28): drop this file's old
+    // symbols, add its new ones — O(symbols-in-file), not O(whole-table).
+    this.removeFromIndex(oldFileSymbols);
+    this.addToIndex(fileSymbols);
+
+    // 5. Re-resolve every edge against the new symbol table. Cheap.
     this.commitState(newSymbols, newRawCalls);
 
     const result = this.finalize(rel, kind, symbolsBefore, edgesBefore, start);
@@ -258,6 +280,7 @@ export class GraphWatcher {
     const symbolsBefore = this.graph.symbols.length;
     const edgesBefore = this.graph.edges.length;
 
+    const oldFileSymbols = this.graph.symbols.filter((s) => s.file === rel);
     const keptSymbols = this.graph.symbols.filter((s) => s.file !== rel);
     const keptRawCalls = this.rawCalls.filter((c) => c.file !== rel);
 
@@ -269,6 +292,7 @@ export class GraphWatcher {
       return null;
     }
 
+    this.removeFromIndex(oldFileSymbols);
     this.commitState(keptSymbols, keptRawCalls);
     const result = this.finalize(rel, 'delete', symbolsBefore, edgesBefore, start);
     this.log(
@@ -298,6 +322,7 @@ export class GraphWatcher {
       indexedBranch: result.git.branch,
     };
     this.rawCalls = this.deriveRawCalls(result.edges);
+    this.byName = buildNameIndex(this.graph.symbols);
     saveGraph(this.graph);
     try {
       const st = statSync(graphPath(this.absRoot));
@@ -359,6 +384,7 @@ export class GraphWatcher {
       if (fresh) {
         this.graph = fresh;
         this.rawCalls = this.deriveRawCalls(fresh.edges);
+        this.byName = buildNameIndex(fresh.symbols);
         this.lastSavedMtimeMs = st.mtimeMs;
         this.lastSavedSizeBytes = st.size;
         this.log(
@@ -375,7 +401,9 @@ export class GraphWatcher {
    * graph object, save atomically.
    */
   private commitState(symbols: SymbolRecord[], rawCalls: RawCall[]): void {
-    const edges = resolveCallEdges(rawCalls, symbols);
+    // Resolve against the incrementally-maintained index (issue #28) rather
+    // than rebuilding it from `symbols` on every save.
+    const edges = resolveCallEdges(rawCalls, symbols, this.byName);
 
     // Recompute filesIndexed from surviving symbols' files.
     const files = new Set<string>();
@@ -424,6 +452,30 @@ export class GraphWatcher {
       edgesAfter: this.graph.edges.length,
       durationMs: Date.now() - start,
     };
+  }
+
+  /** Add a file's symbols to the inverted name index (issue #28). */
+  private addToIndex(syms: SymbolRecord[]): void {
+    for (const s of syms) {
+      const list = this.byName.get(s.name);
+      if (list) list.push(s);
+      else this.byName.set(s.name, [s]);
+    }
+  }
+
+  /**
+   * Remove a file's symbols from the inverted name index by reference. The
+   * objects passed here are the same instances stored in the index (they came
+   * from `this.graph.symbols`), so `indexOf` finds them. O(symbols-in-file).
+   */
+  private removeFromIndex(syms: SymbolRecord[]): void {
+    for (const s of syms) {
+      const list = this.byName.get(s.name);
+      if (!list) continue;
+      const i = list.indexOf(s);
+      if (i >= 0) list.splice(i, 1);
+      if (list.length === 0) this.byName.delete(s.name);
+    }
   }
 
   private deriveRawCalls(edges: CallEdge[]): RawCall[] {
