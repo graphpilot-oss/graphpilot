@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/version-0.1.0-blue.svg" alt="v0.1.0" />
   <img src="https://img.shields.io/badge/status-alpha-orange.svg" alt="alpha" />
   <img src="https://img.shields.io/badge/tests-239%20passing-brightgreen.svg" alt="239 tests" />
+  <a href="https://glama.ai/mcp/servers/graphpilot-oss/graphpilot"><img src="https://glama.ai/mcp/servers/graphpilot-oss/graphpilot/badges/score.svg" alt="GraphPilot MCP server" /></a>
 </p>
 
 <p align="center">
