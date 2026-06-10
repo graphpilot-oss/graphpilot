@@ -155,8 +155,13 @@ function fmtEdge(e: CallEdge, idx: GraphIndex, index?: number): string {
         return t ? `${t.parent ? t.parent + '.' : ''}${t.name}` : e.toName;
       })()
     : `${e.toName} <unresolved>`;
+  // Flag best-guess resolutions so the agent can disambiguate via full id
+  // rather than trusting an arbitrary pick among homonyms (issue #18).
+  const ambiguityTag = e.ambiguous
+    ? `  [1 of ${e.candidateCount ?? 2} candidates — disambiguate via full id]`
+    : '';
   // Evidence anchor on the call site (the file:line where the call occurs).
-  return `${prefix}${fromName}  →  ${toLabel}  (${e.file}:${e.line}${shaTag(idx)})`;
+  return `${prefix}${fromName}  →  ${toLabel}  (${e.file}:${e.line}${shaTag(idx)})${ambiguityTag}`;
 }
 
 // ----------------------------------------------------------------------------

@@ -2,6 +2,14 @@ import type Parser from 'tree-sitter';
 import { walk, type ParsedFile } from './parser.js';
 import type { SymbolRecord } from './symbols.js';
 
+/** Name of the synthetic per-file module-scope pseudo-symbol. */
+export const MODULE_SYMBOL_NAME = '<module>';
+
+/** Stable id for a file's module-scope pseudo-symbol (pre path-rewrite). */
+export function moduleSymbolId(path: string): string {
+  return `${path}#${MODULE_SYMBOL_NAME}`;
+}
+
 /**
  * A resolved call edge.
  *
@@ -17,6 +25,15 @@ export interface CallEdge {
   file: string;
   line: number;
   column: number;
+  /**
+   * True when `toId` was resolved from more than one symbol sharing `toName`,
+   * so the chosen target is a best-guess (name-only resolver, no import/type
+   * info). Absent on confident or unresolved edges. Lets the agent fall back
+   * to a more specific query instead of trusting an arbitrary pick.
+   */
+  ambiguous?: boolean;
+  /** Number of symbols that shared `toName`. Only set when `ambiguous`. */
+  candidateCount?: number;
 }
 
 /**
@@ -97,6 +114,77 @@ function calleeName(callNode: Parser.SyntaxNode): string | null {
 }
 
 /**
+ * Extract the component name from a JSX element node. Only PascalCase tags are
+ * treated as calls into the graph — lowercase tags (`<div>`, `<span>`) are
+ * intrinsic HTML, not user-defined symbols.
+ *
+ *   <Header />        -> "Header"
+ *   <Menu.Item />     -> "Item"
+ *   <div />           -> null (intrinsic)
+ */
+function jsxComponentName(node: Parser.SyntaxNode): string | null {
+  const tag = node.childForFieldName('name');
+  if (!tag) return null;
+  if (tag.type === 'member_expression') {
+    const prop = tag.childForFieldName('property')?.text;
+    return prop && /^[A-Z]/.test(prop) ? prop : null;
+  }
+  return /^[A-Z]/.test(tag.text) ? tag.text : null;
+}
+
+/**
+ * Unified callee-name extraction across plain calls, `new`, and JSX element
+ * usages. Returns null for nodes that aren't a call or for dynamic forms we
+ * don't resolve.
+ */
+function callTargetName(node: Parser.SyntaxNode): string | null {
+  if (node.type === 'call_expression' || node.type === 'new_expression') {
+    return calleeName(node);
+  }
+  if (node.type === 'jsx_self_closing_element' || node.type === 'jsx_opening_element') {
+    return jsxComponentName(node);
+  }
+  return null;
+}
+
+/**
+ * True if `node` sits inside the body of a named function symbol (so the call
+ * is already attributed in pass 1). Walks ancestors; anonymous functions are
+ * transparent — a call in `arr.map(() => foo())` is owned by the nearest
+ * *named* function, exactly mirroring walkBodyExcludingNestedFns.
+ */
+function isInsideNamedFunction(
+  node: Parser.SyntaxNode,
+  symByKey: Map<string, SymbolRecord>,
+): boolean {
+  let cur = node.parent;
+  while (cur) {
+    if (FUNCTION_NODE_TYPES.has(cur.type)) {
+      const key = nodeMatchKey(cur);
+      if (key && symByKey.has(key)) return true;
+    }
+    cur = cur.parent;
+  }
+  return false;
+}
+
+/** Build the synthetic module-scope pseudo-symbol for a file. */
+function makeModuleSymbol(parsed: ParsedFile): SymbolRecord {
+  const endLine = parsed.tree.rootNode.endPosition.row + 1;
+  return {
+    id: moduleSymbolId(parsed.path),
+    name: MODULE_SYMBOL_NAME,
+    kind: 'module',
+    file: parsed.path,
+    line: 1,
+    column: 1,
+    endLine: Math.max(1, endLine),
+    signature: '<module scope>',
+    exported: false,
+  };
+}
+
+/**
  * Match the AST node a SymbolRecord was extracted from. We use line+name as
  * the key; collisions are vanishingly rare (would need two same-named symbols
  * on the same line, which TS would reject).
@@ -145,6 +233,7 @@ export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[])
     symByKey.set(`${s.line}:${s.name}`, s);
   }
 
+  // Pass 1: calls (and JSX usages) inside named function symbols.
   for (const node of walk(parsed.tree.rootNode)) {
     if (!FUNCTION_NODE_TYPES.has(node.type)) continue;
     const key = nodeMatchKey(node);
@@ -156,10 +245,7 @@ export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[])
     if (!body) continue;
 
     for (const sub of walkBodyExcludingNestedFns(body, symByKey)) {
-      if (sub.type !== 'call_expression' && sub.type !== 'new_expression') {
-        continue;
-      }
-      const name = calleeName(sub);
+      const name = callTargetName(sub);
       if (!name) continue;
       calls.push({
         fromId: sym.id,
@@ -169,6 +255,33 @@ export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[])
         column: sub.startPosition.column + 1,
       });
     }
+  }
+
+  // Pass 2: module-scope calls — anything not owned by a named function
+  // (top-level statements, `if`/IIFE bodies, class field initializers,
+  // top-level `await`). Attributed to a synthetic per-file <module> symbol so
+  // `gp_callers` can surface entry-point usages instead of dropping them.
+  const moduleCalls: RawCall[] = [];
+  const moduleId = moduleSymbolId(parsed.path);
+  for (const node of walk(parsed.tree.rootNode)) {
+    const name = callTargetName(node);
+    if (!name) continue;
+    if (isInsideNamedFunction(node, symByKey)) continue;
+    moduleCalls.push({
+      fromId: moduleId,
+      toName: name,
+      file: parsed.path,
+      line: node.startPosition.row + 1,
+      column: node.startPosition.column + 1,
+    });
+  }
+
+  if (moduleCalls.length > 0) {
+    // Synthesize the module pseudo-symbol so the edges have a resolvable
+    // `fromId`. Appended to fileSymbols (not returned separately) so the
+    // indexer/watcher pick it up in their existing id-rewrite + aggregate loop.
+    fileSymbols.push(makeModuleSymbol(parsed));
+    calls.push(...moduleCalls);
   }
 
   return calls;
@@ -194,22 +307,49 @@ export function extractRawCalls(parsed: ParsedFile, fileSymbols: SymbolRecord[])
  *
  * These are fine for v1; the goal is "better than grep" not "compiler-grade".
  */
-export function resolveCallEdges(rawCalls: RawCall[], allSymbols: SymbolRecord[]): CallEdge[] {
+/**
+ * Build the name→symbols inverted index used by the resolver. Exposed so the
+ * watcher can maintain one incrementally across saves (see issue #28) instead
+ * of rebuilding O(allSymbols) on every keystroke.
+ */
+export function buildNameIndex(allSymbols: SymbolRecord[]): Map<string, SymbolRecord[]> {
   const byName = new Map<string, SymbolRecord[]>();
   for (const s of allSymbols) {
     const list = byName.get(s.name);
     if (list) list.push(s);
     else byName.set(s.name, [s]);
   }
+  return byName;
+}
+
+export function resolveCallEdges(
+  rawCalls: RawCall[],
+  allSymbols: SymbolRecord[],
+  /**
+   * Optional prebuilt name index. When supplied, the O(allSymbols) rebuild is
+   * skipped — the watcher passes an index it maintains incrementally so a save
+   * costs O(symbols-in-changed-file), not O(whole-table). `allSymbols` is then
+   * ignored (callers pass `[]`).
+   */
+  prebuiltIndex?: Map<string, SymbolRecord[]>,
+): CallEdge[] {
+  const byName = prebuiltIndex ?? buildNameIndex(allSymbols);
 
   return rawCalls.map((c) => {
     const candidates = byName.get(c.toName);
     if (!candidates || candidates.length === 0) {
       return { ...c, toId: null };
     }
-    // Prefer same-file candidates first.
+    // Prefer a same-file candidate; otherwise fall back to the first match.
     const sameFile = candidates.find((s) => s.file === c.file);
-    if (sameFile) return { ...c, toId: sameFile.id };
-    return { ...c, toId: candidates[0].id };
+    const chosen = sameFile ?? candidates[0];
+    const edge: CallEdge = { ...c, toId: chosen.id };
+    // Signal when the pick was a guess among homonyms so the agent doesn't
+    // treat an arbitrary resolution as authoritative (issue #18).
+    if (candidates.length > 1) {
+      edge.ambiguous = true;
+      edge.candidateCount = candidates.length;
+    }
+    return edge;
   });
 }
