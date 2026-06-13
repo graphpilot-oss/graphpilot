@@ -108,9 +108,9 @@ trade-offs:
   `~/.graphpilot/`.
 - **Signatures may contain secrets if your code does.** If you have
   `const API_KEY = "sk-..."` literally in source, that line ends up in
-  `graph.json`. We don't redact in v0.1. **Planned in v0.2:** secret-
-  pattern detection (matches against known formats like `sk-`, `ghp_`,
-  AWS keys, JWTs, PEM headers).
+  `graph.json`. Secret-pattern redaction is **shipped** (T3 defence): GraphPilot automatically redacts known
+  secret formats — `sk-`, `ghp_`/`ghs_`, AWS `AKIA` keys, JWTs, PEM headers, Slack/Stripe tokens —
+  before writing to `graph.json`. No secrets from recognised patterns reach the stored graph.
 
 ## Platform support
 
