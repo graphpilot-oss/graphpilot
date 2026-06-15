@@ -34,8 +34,13 @@ export function repoIdFor(absRootPath: string): string {
   return createHash('sha256').update(absRootPath).digest('hex').slice(0, 16);
 }
 
+/** Base directory that holds every per-repo index (`~/.graphpilot`). */
+export function storageRoot(): string {
+  return join(homedir(), '.graphpilot');
+}
+
 export function repoDir(absRootPath: string): string {
-  return join(homedir(), '.graphpilot', repoIdFor(absRootPath));
+  return join(storageRoot(), repoIdFor(absRootPath));
 }
 
 export function graphPath(absRootPath: string): string {

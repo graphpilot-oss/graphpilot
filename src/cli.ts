@@ -17,6 +17,7 @@ Usage:
   graphpilot watch <path>     Watch the repo and update the index on save
   graphpilot mcp              Start the MCP server (stdio)
   graphpilot init             Drop routing-rules files for detected editors
+  graphpilot doctor [path]    Diagnose why an agent can't see the gp_ tools
   graphpilot version          Print the installed version
   graphpilot help             Show this help
 
@@ -29,6 +30,7 @@ Examples:
   graphpilot init --all       # write rules for all supported editors
   graphpilot init --client cursor --path /my/repo
   graphpilot init --dry-run   # preview what would be written
+  graphpilot doctor           # health check; add --json for a bug report
 `;
 
 async function cmdIndex(pathArg: string, opts: { noWorktree?: boolean } = {}): Promise<number> {
@@ -191,6 +193,18 @@ async function main(): Promise<number> {
         : undefined;
       await runInit({ repoPath, clients, all: allFlag, dryRun });
       return 0;
+    }
+    case 'doctor': {
+      const { runDoctor, formatReport } = await import('./doctor.js');
+      const json = rest.includes('--json');
+      const path = rest.find((a) => !a.startsWith('--')) ?? '.';
+      const report = await runDoctor({ repoPath: resolve(path) });
+      if (json) {
+        process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+      } else {
+        process.stdout.write(formatReport(report));
+      }
+      return report.ok ? 0 : 1;
     }
     case undefined: {
       // Some MCP hosts and directory inspectors (Glama, registry scanners)
