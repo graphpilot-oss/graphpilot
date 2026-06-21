@@ -83,6 +83,8 @@ node /abs/path/to/graphpilot/dist/cli.js watch .
 
 ## Troubleshooting
 
+> Quickest path: run `graphpilot doctor`. Full symptom-indexed guide: [`docs/troubleshooting.md`](../../docs/troubleshooting.md).
+
 | Symptom                            | Fix                                                                                                                                                                           |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Server shows red in Settings → MCP | Click the refresh icon. If still red, run `node dist/cli.js mcp` in a terminal — inspect stderr.                                                                              |
