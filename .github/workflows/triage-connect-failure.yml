@@ -1,0 +1,40 @@
+name: Connect-failure triage
+
+# Connection/startup failures are the highest-severity report class for an MCP
+# server — they make the tool look broken on first contact. When a reporter
+# checks the "Connect/startup failure" box in the bug template, route the issue
+# to the P0 fast lane automatically. Policy: docs/agents/triage-labels.md.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  label-connect-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || '';
+            // Matches the checked "**Connect/startup failure**" task box from
+            // .github/ISSUE_TEMPLATE/bug_report.md.
+            const checked = /- \[x\]\s*\*\*Connect\/startup failure\*\*/i.test(body);
+            if (!checked) return;
+
+            const existing = (context.payload.issue.labels || []).map((l) =>
+              typeof l === 'string' ? l : l.name,
+            );
+            const toAdd = ['connect-failure', 'P0'].filter((l) => !existing.includes(l));
+            if (toAdd.length === 0) return;
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: toAdd,
+            });
