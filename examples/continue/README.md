@@ -84,6 +84,8 @@ node /abs/path/to/graphpilot/dist/cli.js watch .
 
 ## Troubleshooting
 
+> Quickest path: run `graphpilot doctor`. Full symptom-indexed guide: [`docs/troubleshooting.md`](../../docs/troubleshooting.md).
+
 | Symptom                                                 | Fix                                                                                       |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `modelContextProtocolServers` reported as "unknown key" | Your Continue version is on an older schema. Check the current docs for the new key name. |

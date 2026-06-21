@@ -108,6 +108,8 @@ Sub-10 ms incremental updates on every save. Ctrl+C to stop.
 
 ## Troubleshooting
 
+> Quickest path: run `graphpilot doctor`. Full symptom-indexed guide: [`docs/troubleshooting.md`](../../docs/troubleshooting.md).
+
 | Symptom                                   | Fix                                                                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `/mcp` doesn't list `graphpilot`          | Edits to `~/.claude.json` don't hot-reload. Fully quit Claude Code and relaunch.                              |

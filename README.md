@@ -136,7 +136,7 @@ Ask your agent a structural question instead of letting it grep:
 
 > _"Use gp_impact to show me everything that breaks if I rename `parseToken`."_
 
-You should see a response with `file:line @ sha` anchors you can click straight to. If the agent doesn't reach for the tool, prompt explicitly: "use the `gp_` MCP tools." If it can't see them at all, the MCP config wasn't picked up — restart the agent and re-check the config path for your client in [`examples/`](examples/).
+You should see a response with `file:line @ sha` anchors you can click straight to. If the agent doesn't reach for the tool, prompt explicitly: "use the `gp_` MCP tools." If it can't see them at all, the MCP config wasn't picked up — run `graphpilot doctor` to pinpoint why (or see [`docs/troubleshooting.md`](docs/troubleshooting.md)), then restart the agent.
 
 **5. Keep the index fresh as you edit (optional but recommended)**
 
@@ -301,10 +301,14 @@ That's where the maintainer's pain was, and tree-sitter-typescript covers TS, TS
 **How does this compare to LSP?**
 LSPs are scoped to one editor and one buffer at a time, and they re-compute on each query. GraphPilot is editor-agnostic, persists across sessions, and answers structural questions (who-calls, blast-radius) that LSPs don't expose uniformly.
 
+**The agent can't see the tools / something's not working.**
+Run `graphpilot doctor` — it checks Node, `PATH`, the index, the MCP handshake, and per-client config in one shot. Symptom-by-symptom fixes live in [`docs/troubleshooting.md`](docs/troubleshooting.md).
+
 ## Documentation
 
 - [`docs/quickstart.md`](docs/quickstart.md) — 5-minute walkthrough
 - [`docs/mcp-setup.md`](docs/mcp-setup.md) — per-client config reference
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) — symptom-indexed fixes (start with `graphpilot doctor`)
 - [`docs/architecture.md`](docs/architecture.md) — pipeline writeup with file refs
 - [`docs/limitations.md`](docs/limitations.md) — v1 caveats (read this)
 - [`bench/README.md`](bench/README.md) — benchmark methodology + results
