@@ -71,6 +71,8 @@ node /abs/path/to/graphpilot/dist/cli.js watch .
 
 ## Troubleshooting
 
+> Quickest path: run `graphpilot doctor`. Full symptom-indexed guide: [`docs/troubleshooting.md`](../../docs/troubleshooting.md).
+
 | Symptom                                     | Fix                                                                                                       |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | MCP tools list is empty                     | Verify JSON syntax with `python -m json.tool ~/.codeium/windsurf/mcp_config.json`. Then restart Windsurf. |

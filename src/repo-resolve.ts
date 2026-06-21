@@ -201,6 +201,39 @@ export function formatNoIndexError(requestedPath: string, resolvedWorktreeRoot: 
   return lines.join('\n');
 }
 
+/**
+ * Build an error for a graph that *exists but can't be used* — distinct from
+ * "no index" so the agent doesn't tell the user to index a repo that already
+ * has one. `unreadable` = transient FS error (retry); `corrupt` = the on-disk
+ * graph failed the T4 safety validator (rebuild).
+ */
+export function formatBrokenIndexError(
+  resolvedWorktreeRoot: string,
+  kind: 'unreadable' | 'corrupt',
+  detail?: string,
+): string {
+  if (kind === 'unreadable') {
+    return [
+      `GraphPilot could not read the index for ${resolvedWorktreeRoot}` +
+        `${detail ? ` (filesystem error: ${detail})` : ''}.`,
+      'The index file exists but is temporarily unreadable — this is NOT a missing index.',
+      '',
+      'Fix:',
+      '  • Retry — transient errors (EMFILE / EACCES) usually clear, or',
+      `  • Check permissions on ~/.graphpilot, then re-run \`graphpilot index ${resolvedWorktreeRoot}\`.`,
+    ].join('\n');
+  }
+  return [
+    `GraphPilot index for ${resolvedWorktreeRoot} exists but is corrupt` +
+      `${detail ? ` (${detail})` : ''}.`,
+    'The on-disk graph was rejected by the T4 safety validator, so no results were returned.',
+    '',
+    'Fix:',
+    `  • Re-run \`graphpilot index ${resolvedWorktreeRoot}\` to rebuild it, or`,
+    '  • Call the gp_index tool with the same path.',
+  ].join('\n');
+}
+
 /** @internal Test hook: summarize a loaded graph. */
 export function graphSummary(g: Graph): IndexedRepoSummary {
   return {

@@ -19,6 +19,10 @@ Each subfolder follows the same shape:
 | Continue.dev    | [`continue/`](continue/)                    | `~/.continue/config.json`                                                                                       |
 | Anything else   | [`docs/mcp-setup.md`](../docs/mcp-setup.md) | n/a — generic stdio MCP instructions                                                                            |
 
+## Not working?
+
+Run `graphpilot doctor` first — it checks Node, `PATH`, the index, the MCP handshake, and whether GraphPilot is registered in each client, then prints a fix per failure. Symptom-by-symptom fixes: [`docs/troubleshooting.md`](../docs/troubleshooting.md).
+
 ## Two ways GraphPilot can be launched
 
 Every example shows both forms. Pick whichever matches how you installed GraphPilot.
