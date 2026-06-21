@@ -16,7 +16,7 @@ Usage:
   graphpilot status <path>    Show info about an indexed repo
   graphpilot watch <path>     Watch the repo and update the index on save
   graphpilot mcp              Start the MCP server (stdio)
-  graphpilot init             Drop routing-rules files for detected editors
+  graphpilot init             Write routing rules + register the MCP server
   graphpilot doctor [path]    Diagnose why an agent can't see the gp_ tools
   graphpilot version          Print the installed version
   graphpilot help             Show this help
@@ -26,10 +26,11 @@ Examples:
   graphpilot status .
   graphpilot watch .          # keeps the index fresh as you edit
   graphpilot mcp              # used by MCP clients (Claude Code, Cursor, ...)
-  graphpilot init             # auto-detect editors and write routing rules
-  graphpilot init --all       # write rules for all supported editors
+  graphpilot init             # write routing rules + register graphpilot in detected clients
+  graphpilot init --all       # do it for all supported editors
   graphpilot init --client cursor --path /my/repo
-  graphpilot init --dry-run   # preview what would be written
+  graphpilot init --dry-run   # preview without writing
+  graphpilot init --no-register  # only write routing rules, don't touch MCP config
   graphpilot doctor           # health check; add --json for a bug report
 `;
 
@@ -183,6 +184,7 @@ async function main(): Promise<number> {
       const { runInit } = await import('./init.js');
       const allFlag = rest.includes('--all');
       const dryRun = rest.includes('--dry-run');
+      const noRegister = rest.includes('--no-register');
       const pathIdx = rest.indexOf('--path');
       const pathArg = pathIdx !== -1 ? rest[pathIdx + 1] : undefined;
       const clientIdx = rest.indexOf('--client');
@@ -191,7 +193,13 @@ async function main(): Promise<number> {
       const clients = clientArg
         ? ([clientArg] as Parameters<typeof runInit>[0]['clients'])
         : undefined;
+      process.stdout.write('Routing rules:\n');
       await runInit({ repoPath, clients, all: allFlag, dryRun });
+      if (!noRegister) {
+        const { registerMcpServers } = await import('./mcp-register.js');
+        process.stdout.write('\nMCP server registration:\n');
+        await registerMcpServers({ clients, all: allFlag, dryRun });
+      }
       return 0;
     }
     case 'doctor': {
