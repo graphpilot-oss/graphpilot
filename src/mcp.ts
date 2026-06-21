@@ -8,7 +8,14 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { GraphIndex } from './query.js';
 import { indexDirectory } from './indexer.js';
-import { loadGraph, saveGraph, repoIdFor, graphPath, type Graph } from './storage.js';
+import {
+  loadGraphResult,
+  saveGraph,
+  repoIdFor,
+  graphPath,
+  type Graph,
+  type GraphLoadFailure,
+} from './storage.js';
 import { validateRootPath } from './validation.js';
 import {
   validateGpIndex,
@@ -25,6 +32,7 @@ import { analyzeImpact, type ImpactCaller, type ImpactResult } from './impact.js
 import { getChangedFiles, resolveIndexRoot } from './git.js';
 import {
   formatNoIndexError,
+  formatBrokenIndexError,
   getMcpClientRoots,
   resolveRepoPath,
   rootUriToFilesystemPath,
@@ -63,6 +71,32 @@ const indexCache = new Map<string, CacheEntry>();
 let mcpServerForRoots: Server | null = null;
 let rootsRefreshInflight: Promise<void> | null = null;
 
+/**
+ * Map a stat outcome + load outcome to the agent-facing error, or null when
+ * there's nothing to report. Pure (no FS/cache), so the message policy is
+ * unit-testable in isolation from the cache/stat side effects in
+ * getOrLoadIndex.
+ *
+ * #67: a corrupt index gets a different message than a missing one — the agent
+ * must not tell the user to `index` a repo whose graph already exists.
+ * #69: a non-ENOENT stat error means the index file is there but unreadable
+ * right now, which is a transient condition, not "no index".
+ */
+export function indexErrorMessage(
+  requested: string,
+  root: string,
+  statErrCode: string | undefined,
+  loadReason: GraphLoadFailure | null,
+): string | null {
+  if (statErrCode && statErrCode !== 'ENOENT') {
+    return formatBrokenIndexError(root, 'unreadable', statErrCode);
+  }
+  if (loadReason === null) return null;
+  if (loadReason === 'missing') return formatNoIndexError(requested, root);
+  if (loadReason === 'unreadable') return formatBrokenIndexError(root, 'unreadable');
+  return formatBrokenIndexError(root, 'corrupt', loadReason);
+}
+
 function getOrLoadIndex(
   rawPath: string | undefined,
 ): { idx: GraphIndex; root: string } | { error: string; root: string } {
@@ -77,14 +111,17 @@ function getOrLoadIndex(
   // session) will bump the mtime and trigger a cache miss here.
   let currentMtimeMs = 0;
   let currentSizeBytes = 0;
+  let statErrCode: string | undefined;
   try {
     const st = statSync(graphPath(root));
     currentMtimeMs = st.mtimeMs;
     currentSizeBytes = st.size;
-  } catch {
-    // File doesn't exist yet — fall through; loadGraph will return null.
+  } catch (e) {
+    statErrCode = (e as NodeJS.ErrnoException).code ?? 'EUNKNOWN';
   }
 
+  // Fast path: we successfully stat'd the file (currentMtimeMs !== 0) and its
+  // fingerprint matches the cached copy.
   const cached = indexCache.get(root);
   if (
     cached &&
@@ -95,17 +132,30 @@ function getOrLoadIndex(
     return { idx: cached.idx, root };
   }
 
-  // Cache miss or stale entry — (re)load from disk.
-  indexCache.delete(root);
-  const graph = loadGraph(root);
-  if (!graph) {
-    return {
-      root,
-      error: formatNoIndexError(requested, root),
-    };
+  // #69: a stat error that is NOT ENOENT (EACCES, EMFILE, EIO, …) means the
+  // index file exists but we couldn't read its metadata this instant. We must
+  // not (a) keep silently serving a possibly-stale warm cache, nor (b) claim
+  // "no index" — both mislead. Drop the cache and surface a clear transient
+  // error the agent can relay verbatim.
+  if (statErrCode && statErrCode !== 'ENOENT') {
+    indexCache.delete(root);
+    return { root, error: indexErrorMessage(requested, root, statErrCode, null) as string };
   }
-  const idx = new GraphIndex(graph);
-  indexCache.set(root, { idx, mtimeMs: currentMtimeMs, sizeBytes: currentSizeBytes });
+
+  // Cache miss / stale / file genuinely gone — (re)load from disk.
+  indexCache.delete(root);
+  const res = loadGraphResult(root);
+  if (!res.ok) {
+    return { root, error: indexErrorMessage(requested, root, undefined, res.reason) as string };
+  }
+  const idx = new GraphIndex(res.graph);
+  // Only cache when we have a trustworthy fingerprint. (currentMtimeMs is
+  // always non-zero on this path — a zero would mean a non-ENOENT stat error,
+  // which returned above — but guard explicitly so a future edit can't poison
+  // the cache with a 0 mtime that never matches a real stat again.)
+  if (currentMtimeMs !== 0) {
+    indexCache.set(root, { idx, mtimeMs: currentMtimeMs, sizeBytes: currentSizeBytes });
+  }
   return { idx, root };
 }
 
