@@ -75,8 +75,21 @@ export function saveGraph(graph: Graph): string {
 }
 
 /**
- * Load and validate a graph from disk. Returns null if the file is missing,
- * unparseable, has a wrong schema version, or fails structural validation.
+ * Why a graph could not be loaded. The MCP layer maps these to distinct,
+ * agent-readable messages: `missing` tells the user to index; everything else
+ * means the index *exists but is unusable*, which is a different remedy.
+ */
+export type GraphLoadFailure =
+  | 'missing'
+  | 'unreadable'
+  | 'invalid-json'
+  | 'schema-invalid'
+  | 'root-mismatch';
+
+export type GraphLoadResult = { ok: true; graph: Graph } | { ok: false; reason: GraphLoadFailure };
+
+/**
+ * Load and validate a graph from disk, reporting *why* on failure.
  *
  * T4 defence: anything from disk is untrusted. We re-parse and re-shape
  * every field before exposing the result to query / MCP layers. String
@@ -85,18 +98,17 @@ export function saveGraph(graph: Graph): string {
  * Lines into tool output.
  *
  * Validation errors are written to stderr for diagnostics. The function
- * never throws on bad data — it returns null so the MCP tool layer can
- * surface "no index" cleanly.
+ * never throws on bad data.
  */
-export function loadGraph(absRootPath: string): Graph | null {
+export function loadGraphResult(absRootPath: string): GraphLoadResult {
   const path = graphPath(absRootPath);
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) return { ok: false, reason: 'missing' };
 
   let raw: string;
   try {
     raw = readFileSync(path, 'utf8');
   } catch {
-    return null;
+    return { ok: false, reason: 'unreadable' };
   }
 
   let parsed: unknown;
@@ -104,7 +116,7 @@ export function loadGraph(absRootPath: string): Graph | null {
     parsed = JSON.parse(raw);
   } catch {
     process.stderr.write(`[graphpilot] graph.json is not valid JSON: ${path}\n`);
-    return null;
+    return { ok: false, reason: 'invalid-json' };
   }
 
   const errors: string[] = [];
@@ -115,7 +127,7 @@ export function loadGraph(absRootPath: string): Graph | null {
         errors.map((e) => `  - ${e}`).join('\n') +
         '\n',
     );
-    return null;
+    return { ok: false, reason: 'schema-invalid' };
   }
   // Reject graphs whose stored rootPath doesn't match the directory we
   // derived the storage path from. Guards against a graph.json copied from
@@ -125,7 +137,17 @@ export function loadGraph(absRootPath: string): Graph | null {
       `[graphpilot] graph.json rootPath mismatch: stored "${validated.rootPath}" ` +
         `but requested "${absRootPath}" — ignoring stale index.\n`,
     );
-    return null;
+    return { ok: false, reason: 'root-mismatch' };
   }
-  return validated;
+  return { ok: true, graph: validated };
+}
+
+/**
+ * Convenience wrapper: load a graph or null. Callers that don't care *why*
+ * loading failed (CLI status, doctor) use this; the MCP layer uses
+ * loadGraphResult to distinguish missing from corrupt.
+ */
+export function loadGraph(absRootPath: string): Graph | null {
+  const res = loadGraphResult(absRootPath);
+  return res.ok ? res.graph : null;
 }
