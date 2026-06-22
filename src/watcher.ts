@@ -139,7 +139,7 @@ export class GraphWatcher {
       // build one. We initialize empty here so applyUpdate is safe to call
       // pre-start in tests.
       this.graph = {
-        version: 1,
+        version: 2,
         repoId: repoIdFor(this.absRoot),
         rootPath: this.absRoot,
         indexedAt: new Date().toISOString(),
@@ -309,7 +309,7 @@ export class GraphWatcher {
       throw new Error('Refusing to watch: index would exceed MAX_FILES_PER_INDEX.');
     }
     this.graph = {
-      version: 1,
+      version: 2,
       repoId: repoIdFor(this.absRoot),
       rootPath: this.absRoot,
       indexedAt: new Date().toISOString(),

@@ -50,7 +50,27 @@ export function extractSymbols(parsed: ParsedFile): SymbolRecord[] {
   for (const node of walk(parsed.tree.rootNode)) {
     extractFromNode(node, parsed, out);
   }
+  disambiguateIds(out);
   return out;
+}
+
+/**
+ * Symbol ids (v2) are `path#[parent.]name`, deliberately position-free so a
+ * line-shifting edit doesn't rotate every id in the file (the evidence-anchor
+ * pitch depends on ids being stable across unrelated edits — see #20). That
+ * means two symbols can share a base id: function overloads, or a get/set
+ * accessor pair on the same property. We append an occurrence suffix (`#2`,
+ * `#3`, …) to the 2nd-and-later in source order so every id stays unique. The
+ * suffix is stable under line shifts (order and count don't change); it only
+ * moves if an actual overload is added/removed/reordered.
+ */
+function disambiguateIds(syms: SymbolRecord[]): void {
+  const seen = new Map<string, number>();
+  for (const s of syms) {
+    const n = (seen.get(s.id) ?? 0) + 1;
+    seen.set(s.id, n);
+    if (n > 1) s.id = `${s.id}#${n}`;
+  }
 }
 
 function extractFromNode(node: Parser.SyntaxNode, parsed: ParsedFile, out: SymbolRecord[]): void {
@@ -321,7 +341,10 @@ function record(
   const endLine = node.endPosition.row + 1;
   const signature = oneLineSignature(node, parsed.source);
   const exported = isExported(node);
-  const id = `${parsed.path}#${parent ? parent + '.' : ''}${name}@${line}`;
+  // Position-free id (v2). line/column/endLine are still recorded below, but
+  // the id no longer embeds @line — see disambiguateIds for why and how
+  // same-name collisions are resolved.
+  const id = `${parsed.path}#${parent ? parent + '.' : ''}${name}`;
   return {
     id,
     name,

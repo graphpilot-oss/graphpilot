@@ -34,7 +34,7 @@ function validEdge(over: Partial<Record<string, unknown>> = {}) {
 
 function validGraph(over: Partial<Record<string, unknown>> = {}) {
   return {
-    version: 1,
+    version: 2,
     repoId: 'abcd1234',
     rootPath: '/tmp/myrepo',
     indexedAt: '2026-05-19T00:00:00Z',
@@ -88,8 +88,9 @@ describe('validateGraph — hard rejects', () => {
   });
 
   it('rejects wrong version', () => {
-    expect(validateGraph(validGraph({ version: 2 }))).toBeNull();
-    expect(validateGraph(validGraph({ version: '1' }))).toBeNull();
+    expect(validateGraph(validGraph({ version: 1 }))).toBeNull(); // old schema
+    expect(validateGraph(validGraph({ version: 3 }))).toBeNull(); // future schema
+    expect(validateGraph(validGraph({ version: '2' }))).toBeNull(); // string, not number
     expect(validateGraph(validGraph({ version: undefined }))).toBeNull();
   });
 
@@ -219,7 +220,7 @@ describe('loadGraph — integration over the FS', () => {
 
   it('round-trips a valid graph saved by saveGraph', () => {
     const graph: Graph = {
-      version: 1,
+      version: 2,
       repoId: 'roundtrip0000000',
       rootPath: workRoot,
       indexedAt: new Date().toISOString(),
@@ -261,7 +262,7 @@ describe('loadGraph — integration over the FS', () => {
     writeFileSync(
       join(dir, 'graph.json'),
       JSON.stringify({
-        version: 2, // future schema
+        version: 99, // unsupported schema version
         repoId: 'x',
         rootPath: '/tmp',
         indexedAt: '2026',
@@ -284,7 +285,7 @@ describe('loadGraph — integration over the FS', () => {
     writeFileSync(
       join(dir, 'graph.json'),
       JSON.stringify({
-        version: 1,
+        version: 2,
         repoId: 'tamper00',
         rootPath: workRoot,
         indexedAt: '2026-05-19T00:00:00Z',

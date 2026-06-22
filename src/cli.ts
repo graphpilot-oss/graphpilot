@@ -55,7 +55,7 @@ async function cmdIndex(pathArg: string, opts: { noWorktree?: boolean } = {}): P
   process.stdout.write(`Indexing ${absRoot} ...\n`);
   const result = await indexDirectory(absRoot);
   const graph: Graph = {
-    version: 1,
+    version: 2,
     repoId: repoIdFor(absRoot),
     rootPath: absRoot,
     indexedAt: new Date().toISOString(),

@@ -115,9 +115,10 @@ export class GraphIndex {
    * passing the full id.
    */
   resolveSymbol(nameOrId: string): SymbolRecord | null {
-    if (nameOrId.includes('#') && nameOrId.includes('@')) {
-      return this.findById(nameOrId);
-    }
+    // Try an exact id match first (format-independent — no assumption about
+    // the id's internal shape), then fall back to name resolution.
+    const byId = this.byId.get(nameOrId);
+    if (byId) return byId;
     const matches = this.findByName(nameOrId);
     return matches[0] ?? null;
   }

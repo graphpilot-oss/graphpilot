@@ -195,8 +195,8 @@ export function validateGraph(raw: unknown, errorsOut: string[] = []): Graph | n
     return null;
   }
 
-  if (raw.version !== 1) {
-    ctx.errors.push(`unsupported graph.json version: ${String(raw.version)} (expected 1)`);
+  if (raw.version !== 2) {
+    ctx.errors.push(`unsupported graph.json version: ${String(raw.version)} (expected 2)`);
     return null;
   }
 
@@ -250,7 +250,7 @@ export function validateGraph(raw: unknown, errorsOut: string[] = []): Graph | n
   }
 
   return {
-    version: 1,
+    version: 2,
     repoId,
     rootPath,
     indexedAt,

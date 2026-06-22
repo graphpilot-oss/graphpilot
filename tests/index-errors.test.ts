@@ -10,7 +10,7 @@ import { indexDirectory } from '../src/indexer.js';
 
 function minimalGraph(root: string): Graph {
   return {
-    version: 1,
+    version: 2,
     repoId: 'idxerr0000000000',
     rootPath: root,
     indexedAt: '2026-06-17T00:00:00.000Z',
@@ -62,6 +62,13 @@ describe('indexErrorMessage', () => {
     expect(m).not.toMatch(/No GraphPilot index found/);
   });
 
+  it('#20: a stale-version graph → "older version" re-index message, not "is corrupt"', () => {
+    const m = indexErrorMessage(req, root, undefined, 'stale-version');
+    expect(m).toMatch(/older version/i);
+    expect(m).not.toMatch(/exists but is corrupt/i); // distinct from the corrupt-index message
+    expect(m).not.toMatch(/No GraphPilot index found/);
+  });
+
   it('#69: ENOENT stat + missing load → treated as a normal missing index', () => {
     expect(indexErrorMessage(req, root, 'ENOENT', 'missing')).toMatch(/No GraphPilot index found/);
   });
@@ -98,11 +105,20 @@ describe('loadGraphResult reasons', () => {
     expect(loadGraphResult(workRoot)).toMatchObject({ ok: false, reason: 'invalid-json' });
   });
 
-  it('schema-invalid when the version is wrong', () => {
+  it('stale-version when the graph was built by an older schema', () => {
     mkdirSync(repoDir(workRoot), { recursive: true });
     writeFileSync(
       join(repoDir(workRoot), 'graph.json'),
-      JSON.stringify({ ...minimalGraph(workRoot), version: 2 }),
+      JSON.stringify({ ...minimalGraph(workRoot), version: 1 }),
+    );
+    expect(loadGraphResult(workRoot)).toMatchObject({ ok: false, reason: 'stale-version' });
+  });
+
+  it('schema-invalid when structurally malformed (version ok)', () => {
+    mkdirSync(repoDir(workRoot), { recursive: true });
+    writeFileSync(
+      join(repoDir(workRoot), 'graph.json'),
+      JSON.stringify({ ...minimalGraph(workRoot), symbols: 'not-an-array' }),
     );
     expect(loadGraphResult(workRoot)).toMatchObject({ ok: false, reason: 'schema-invalid' });
   });
@@ -146,7 +162,7 @@ describe('gp_recall response shape: missing vs corrupt vs zero-result', () => {
     writeFileSync(join(validDir, 'a.ts'), 'export function alpha() { return 1; }\n');
     const result = await indexDirectory(validDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: 'validdir00000000',
       rootPath: validDir,
       indexedAt: '2026-06-17T00:00:00.000Z',

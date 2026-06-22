@@ -56,7 +56,9 @@ describe('extractRawCalls', () => {
     for (const c of calls) {
       expect(c.line).toBeGreaterThan(0);
       expect(c.column).toBeGreaterThan(0);
-      expect(c.fromId).toMatch(/.+#.+@\d+/);
+      // v2 ids are position-free: `path#[parent.]name`, no @line suffix (#20).
+      expect(c.fromId).toMatch(/.+#.+/);
+      expect(c.fromId).not.toContain('@');
     }
   });
 });

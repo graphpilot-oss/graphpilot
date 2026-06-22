@@ -91,7 +91,7 @@ describe.skipIf(isWindows)('T7: restrictive permissions on saved graph', () => {
     const fakeRoot = join(workDir, 'pretend-repo');
     mkdirSync(fakeRoot);
     const graph: Graph = {
-      version: 1,
+      version: 2,
       repoId: 'testrepo000000',
       rootPath: fakeRoot,
       indexedAt: new Date().toISOString(),
@@ -227,7 +227,7 @@ describe('T4: loadGraph rootPath mismatch', () => {
     const proj = join(workDir, 'proj');
     mkdirSync(proj);
     const graph: Graph = {
-      version: 1,
+      version: 2,
       repoId: repoIdFor(proj),
       rootPath: proj,
       indexedAt: new Date().toISOString(),
@@ -251,7 +251,7 @@ describe('T4: loadGraph rootPath mismatch', () => {
     mkdirSync(projA);
     mkdirSync(projB);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(projA),
       rootPath: projA,
       indexedAt: new Date().toISOString(),

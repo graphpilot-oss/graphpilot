@@ -8,8 +8,11 @@ import { validateGraph } from './graph-schema.js';
 
 const isWindows = process.platform === 'win32';
 
+/** Current on-disk graph schema version. Bumped to 2 in #20 (stable ids). */
+export const GRAPH_VERSION = 2;
+
 export interface Graph {
-  version: 1;
+  version: 2;
   repoId: string;
   rootPath: string;
   indexedAt: string;
@@ -84,6 +87,7 @@ export type GraphLoadFailure =
   | 'unreadable'
   | 'invalid-json'
   | 'schema-invalid'
+  | 'stale-version'
   | 'root-mismatch';
 
 export type GraphLoadResult = { ok: true; graph: Graph } | { ok: false; reason: GraphLoadFailure };
@@ -117,6 +121,22 @@ export function loadGraphResult(absRootPath: string): GraphLoadResult {
   } catch {
     process.stderr.write(`[graphpilot] graph.json is not valid JSON: ${path}\n`);
     return { ok: false, reason: 'invalid-json' };
+  }
+
+  // Distinguish a graph built by an older GraphPilot (valid JSON, recognizable
+  // shape, wrong schema version) from genuine corruption — the remedy is a
+  // re-index, not "your index is broken". See #20.
+  if (
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    typeof (parsed as { version?: unknown }).version === 'number' &&
+    (parsed as { version: number }).version !== GRAPH_VERSION
+  ) {
+    process.stderr.write(
+      `[graphpilot] graph.json schema v${(parsed as { version: number }).version} is stale ` +
+        `(expected v${GRAPH_VERSION}): ${path} — re-index to upgrade.\n`,
+    );
+    return { ok: false, reason: 'stale-version' };
   }
 
   const errors: string[] = [];

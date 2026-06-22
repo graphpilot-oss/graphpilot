@@ -209,9 +209,20 @@ export function formatNoIndexError(requestedPath: string, resolvedWorktreeRoot: 
  */
 export function formatBrokenIndexError(
   resolvedWorktreeRoot: string,
-  kind: 'unreadable' | 'corrupt',
+  kind: 'unreadable' | 'corrupt' | 'stale',
   detail?: string,
 ): string {
+  if (kind === 'stale') {
+    return [
+      `GraphPilot index for ${resolvedWorktreeRoot} was built by an older version ` +
+        `and uses an outdated on-disk schema.`,
+      'This is not corruption — the format changed (e.g. stable symbol ids).',
+      '',
+      'Fix:',
+      `  • Re-run \`graphpilot index ${resolvedWorktreeRoot}\` to rebuild it, or`,
+      '  • Call the gp_index tool with the same path.',
+    ].join('\n');
+  }
   if (kind === 'unreadable') {
     return [
       `GraphPilot could not read the index for ${resolvedWorktreeRoot}` +
