@@ -49,7 +49,7 @@ describe('resolveRepoPath', () => {
     writeFileSync(join(workDir, 'lib.ts'), 'export function seeded() {}\n');
     const result = await indexDirectory(workDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(workDir),
       rootPath: workDir,
       indexedAt: new Date().toISOString(),
@@ -104,7 +104,7 @@ describe('listIndexedRepos', () => {
       writeFileSync(join(workDir, 'a.ts'), 'export function listed() {}\n');
       const result = await indexDirectory(workDir);
       saveGraph({
-        version: 1,
+        version: 2,
         repoId: repoIdFor(workDir),
         rootPath: workDir,
         indexedAt: new Date().toISOString(),

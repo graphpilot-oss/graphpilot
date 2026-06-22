@@ -20,7 +20,7 @@ const isWindows = process.platform === 'win32';
 
 function makeGraph(over: Partial<Graph> = {}): Graph {
   return {
-    version: 1,
+    version: 2,
     repoId: 'abc123',
     rootPath: '/repo',
     indexedAt: '2026-06-11T00:00:00.000Z',

@@ -94,6 +94,7 @@ export function indexErrorMessage(
   if (loadReason === null) return null;
   if (loadReason === 'missing') return formatNoIndexError(requested, root);
   if (loadReason === 'unreadable') return formatBrokenIndexError(root, 'unreadable');
+  if (loadReason === 'stale-version') return formatBrokenIndexError(root, 'stale');
   return formatBrokenIndexError(root, 'corrupt', loadReason);
 }
 
@@ -370,7 +371,7 @@ async function handleGpIndex(args: GpIndexArgs): Promise<ToolResult> {
 
   const result = await indexDirectory(root);
   const graph: Graph = {
-    version: 1,
+    version: 2,
     repoId: repoIdFor(root),
     rootPath: root,
     indexedAt: new Date().toISOString(),

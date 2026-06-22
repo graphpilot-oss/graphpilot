@@ -25,7 +25,7 @@ beforeAll(async () => {
   writeFileSync(join(workDir, 'hello.ts'), 'export function hello() { return 1; }\n');
   const result = await indexDirectory(workDir);
   const graph: Graph = {
-    version: 1,
+    version: 2,
     repoId: repoIdFor(workDir),
     rootPath: workDir,
     indexedAt: new Date().toISOString(),
@@ -222,7 +222,7 @@ describe('MCP server: gp_impact', () => {
 
     const r = await indexDirectory(impactDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(impactDir),
       rootPath: impactDir,
       indexedAt: new Date().toISOString(),
@@ -317,7 +317,7 @@ describe('MCP server: indexCache invalidation', () => {
     writeFileSync(join(cacheDir, 'v1.ts'), 'export function v1() { return 1; }\n');
     const r = await indexDirectory(cacheDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(cacheDir),
       rootPath: cacheDir,
       indexedAt: new Date().toISOString(),
@@ -357,7 +357,7 @@ describe('MCP server: indexCache invalidation', () => {
     writeFileSync(join(cacheDir, 'v2.ts'), 'export function v2() { return 2; }\n');
     const r2 = await indexDirectory(cacheDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(cacheDir),
       rootPath: cacheDir,
       indexedAt: new Date().toISOString(),
@@ -387,7 +387,7 @@ describe('MCP server: default path via workspace roots', () => {
     writeFileSync(join(rootsDir, 'ping.ts'), 'export function ping() { return 1; }\n');
     const result = await indexDirectory(rootsDir);
     saveGraph({
-      version: 1,
+      version: 2,
       repoId: repoIdFor(rootsDir),
       rootPath: rootsDir,
       indexedAt: new Date().toISOString(),

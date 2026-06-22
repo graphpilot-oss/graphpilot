@@ -255,7 +255,7 @@ async function main(): Promise<number> {
 
   // Persist so loadGraph can be used downstream / for repeat measurements.
   saveGraph({
-    version: 1,
+    version: 2,
     repoId: repoIdFor(repo),
     rootPath: repo,
     indexedAt: new Date().toISOString(),

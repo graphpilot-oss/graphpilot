@@ -43,7 +43,7 @@ function edge(opts: { from: string; to: string | null; toName?: string; file?: s
 
 function makeGraph(symbols: SymbolRecord[], edges: CallEdge[]): Graph {
   return {
-    version: 1,
+    version: 2,
     repoId: 'test',
     rootPath: '/test',
     indexedAt: new Date().toISOString(),

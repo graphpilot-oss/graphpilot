@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFile } from '../src/parser.js';
+import { parseFile, parseSource } from '../src/parser.js';
 import { extractSymbols, type SymbolRecord } from '../src/symbols.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -69,10 +69,40 @@ describe('extractSymbols', () => {
     expect(s.exported).toBe(false);
   });
 
-  it('assigns stable ids', () => {
+  it('assigns position-free ids (v2 — no @line)', () => {
     const s = findOne(syms, 'parseToken', 'function');
-    expect(s.id).toBe(`${s.file}#parseToken@1`);
+    expect(s.id).toBe(`${s.file}#parseToken`);
+    expect(s.id).not.toContain('@');
     const m = findOne(syms, 'authenticate', 'method');
-    expect(m.id).toBe(`${m.file}#AuthService.authenticate@${m.line}`);
+    expect(m.id).toBe(`${m.file}#AuthService.authenticate`);
+  });
+});
+
+describe('symbol id stability (#20)', () => {
+  const src = [
+    'export function login() {}',
+    'export class S {',
+    '  get x() { return 1 }',
+    '  set x(v: number) {}',
+    '  static make() {}',
+    '}',
+  ].join('\n');
+
+  const idsOf = (source: string): string[] =>
+    extractSymbols(parseSource('a.ts', source, 'typescript')).map((s) => s.id);
+
+  it('ids are unchanged when a leading blank line shifts every symbol down', () => {
+    expect(idsOf('\n\n' + src)).toEqual(idsOf(src));
+  });
+
+  it('no id embeds a line number', () => {
+    for (const id of idsOf(src)) expect(id).not.toContain('@');
+  });
+
+  it('a get/set pair gets distinct, collision-free ids', () => {
+    const ids = idsOf(src);
+    expect(new Set(ids).size).toBe(ids.length); // all unique
+    expect(ids).toContain('a.ts#S.x'); // getter (first in source order)
+    expect(ids).toContain('a.ts#S.x#2'); // setter (occurrence-disambiguated)
   });
 });

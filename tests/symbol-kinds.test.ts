@@ -78,7 +78,7 @@ describe('graph-schema — #22 fields survive the T4 load round-trip', () => {
   it('round-trips getter/setter kinds + static + extends/implements', () => {
     const symbols = symbolsOf();
     const graph: Graph = {
-      version: 1,
+      version: 2,
       repoId: 'symkinds00000000',
       rootPath: workRoot,
       indexedAt: '2026-06-18T00:00:00.000Z',

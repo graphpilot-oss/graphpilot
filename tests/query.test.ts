@@ -38,7 +38,7 @@ function buildGraph(): Graph {
     edge('a.ts#parseToken@1', 'trim', null, 'a.ts'),
   ];
   return {
-    version: 1,
+    version: 2,
     repoId: 'test',
     rootPath: '/fake',
     indexedAt: new Date().toISOString(),
