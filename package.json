@@ -42,7 +42,8 @@
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "bench": "tsx bench/run.ts",
-    "bench:scale": "tsx bench/run-scale.ts"
+    "bench:scale": "tsx bench/run-scale.ts",
+    "bench:resolver": "tsx bench/resolver/score-resolver.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
