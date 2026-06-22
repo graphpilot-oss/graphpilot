@@ -28,12 +28,18 @@ const VALID_SYMBOL_KINDS: readonly SymbolKind[] = [
   'function',
   'class',
   'method',
+  'getter',
+  'setter',
   'interface',
   'type',
   'variable',
   'enum',
   'module',
 ];
+
+/** Cap on entries in a string-array field (extends/implements) — a tampered
+ * graph shouldn't be able to smuggle an unbounded list into tool output. */
+const MAX_ARRAY_ITEMS = 50;
 
 // Caps. Match the agent-output sanitizer thresholds in interactions.ts.
 const MAX_STRING_LEN = 2_000;
@@ -91,6 +97,12 @@ function validateSymbol(raw: unknown, ctx: ValidationContext): SymbolRecord | nu
     return null;
   }
 
+  // Optional v0.2 metadata fields — sanitized + carried through only when
+  // present, so old graphs (without them) still validate unchanged.
+  const isStatic = raw.static === true ? true : undefined;
+  const ext = sanitizeStringArray(raw.extends, MAX_NAME_LEN);
+  const impl = sanitizeStringArray(raw.implements, MAX_NAME_LEN);
+
   return {
     id,
     name,
@@ -102,7 +114,22 @@ function validateSymbol(raw: unknown, ctx: ValidationContext): SymbolRecord | nu
     signature,
     exported,
     parent: parent ?? undefined,
+    ...(isStatic ? { static: true } : {}),
+    ...(ext ? { extends: ext } : {}),
+    ...(impl ? { implements: impl } : {}),
   };
+}
+
+/** Sanitize an array-of-strings field; undefined if absent/empty/not an array. */
+function sanitizeStringArray(v: unknown, maxLen: number): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: string[] = [];
+  for (const item of v) {
+    const s = sanitizeString(item, maxLen);
+    if (s) out.push(s);
+    if (out.length >= MAX_ARRAY_ITEMS) break;
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 function validateEdge(raw: unknown, ctx: ValidationContext): CallEdge | null {
