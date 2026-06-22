@@ -37,11 +37,15 @@ trade-offs:
   `Date.now`, `console.log`, `Array.from`, fs/path/process — all have
   `toId: null`. The agent still sees the call happened; it just doesn't
   get a jump-to-definition pointer.
-- **Expected resolution rate:** roughly **25–35% of edges resolve** to
-  an in-repo symbol id; the rest are external. On GraphPilot's own code
-  it's 42/155 (27%). That's enough to materially reduce hallucinations
-  because the questions agents actually ask (_"who calls X in my
-  repo"_) are the ones the dumb resolver answers correctly.
+- **Measured resolution rate:** on GraphPilot's own code, **35% of edges
+  resolve** to an in-repo symbol id (366/1047); the rest are external
+  (stdlib / third-party, correctly left unresolved). On a labeled corpus
+  the resolver scores **75% precision** — the misses are same-name symbols
+  in different files, where the name-based resolver can't tell which one
+  the import meant. That's still enough to materially reduce hallucinations
+  because the questions agents actually ask (_"who calls X in my repo"_)
+  are mostly the ones it answers correctly. Reproduce / track both numbers
+  with `pnpm bench:resolver` (see [`bench/resolver/`](../bench/resolver/)).
 
 **Planned in v0.2:** import-path tracking, re-export resolution.
 
